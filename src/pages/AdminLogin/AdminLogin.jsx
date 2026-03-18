@@ -282,8 +282,8 @@ export default function AdminLogin() {
                 <div className="bg-botanica-800/50 border border-botanica-700/50 rounded-xl px-4 py-3">
                   <p className="text-botanica-400 text-xs leading-relaxed">
                     <span className="text-botanica-300 font-medium">ℹ️ Permisos:</span>{' '}
-                    Las cuentas nuevas tienen rol <span className="font-mono text-botanica-300">retail</span>.
-                    Para acceder al panel, un admin debe cambiar tu rol a <span className="font-mono text-botanica-300">admin</span> en Supabase → Table Editor → profiles.
+                    Las cuentas nuevas tienen el rol <span className="font-mono text-botanica-300">retail</span>.
+                    Para acceder al panel, un administrador debe asignarte el rol de <span className="font-mono text-botanica-300">admin</span>.
                   </p>
                 </div>
 

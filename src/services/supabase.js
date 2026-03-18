@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = (url && key) ? createClient(url, key) : null
+export const supabase = (url && key)
+  ? createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  })
+  : null
 export const isSupabaseEnabled = !!supabase
 
 function toRow(p) {
@@ -64,20 +72,17 @@ export async function authSignOut() {
   await supabase.auth.signOut()
 }
 
-export async function authGetSession() {
-  if (!supabase) return null
-  const { data } = await supabase.auth.getSession()
-  return data.session
-}
-
 export async function getProfile(userId) {
   if (!supabase) return null
   const { data, error } = await supabase
     .from('profiles')
     .select('role, name')
     .eq('id', userId)
-    .single()
-  if (error) return null
+    .maybeSingle()
+  if (error) {
+    console.warn('getProfile error:', error.message)
+    return null
+  }
   return data
 }
 

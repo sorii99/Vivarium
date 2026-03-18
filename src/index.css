@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    overflow-x: clip; /* clip (not hidden) preserves position:sticky behaviour */
+  }
+
+  body {
+    @apply bg-botanica-50 dark:bg-botanica-950 text-botanica-900 dark:text-botanica-100 transition-colors duration-200;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background-color: theme('colors.botanica.300');
+    color: theme('colors.botanica.900');
+  }
+
+  h1, h2, h3, h4 {
+    font-family: theme('fontFamily.display');
+  }
+
+  /* Remove tap highlight on mobile */
+  button, a { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep scroll behaviour */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-botanica-600 hover:bg-botanica-700 active:scale-95
+           text-white font-body font-medium text-sm
+           px-5 py-2.5 rounded-full transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-botanica-400 focus:ring-offset-2
+           dark:focus:ring-offset-botanica-950
+           touch-manipulation;
+  }
+
+  .btn-outline {
+    @apply border border-botanica-600 text-botanica-700 hover:bg-botanica-50
+           dark:border-botanica-500 dark:text-botanica-300 dark:hover:bg-botanica-800
+           font-body font-medium text-sm
+           px-5 py-2.5 rounded-full transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-botanica-400 focus:ring-offset-2
+           touch-manipulation;
+  }
+
+  .btn-ghost {
+    @apply text-botanica-600 hover:bg-botanica-100
+           dark:text-botanica-400 dark:hover:bg-botanica-800
+           font-body font-medium text-sm
+           px-4 py-2 rounded-full transition-all duration-200
+           touch-manipulation;
+  }
+
+  .card {
+    @apply bg-white dark:bg-botanica-900
+           rounded-2xl border border-botanica-100 dark:border-botanica-800
+           shadow-sm hover:shadow-md dark:shadow-none transition-shadow duration-300;
+  }
+
+  .badge-retail {
+    @apply bg-botanica-100 dark:bg-botanica-800 text-botanica-700 dark:text-botanica-300
+           text-xs font-mono px-2 py-0.5 rounded-full;
+  }
+
+  .badge-wholesale {
+    @apply bg-soil-100 dark:bg-botanica-800 text-soil-600 dark:text-soil-300
+           text-xs font-mono px-2 py-0.5 rounded-full;
+  }
+
+  .input-field {
+    @apply w-full border border-botanica-200 dark:border-botanica-700
+           rounded-xl px-4 py-2.5 text-sm
+           bg-white dark:bg-botanica-800
+           text-botanica-900 dark:text-botanica-100
+           placeholder:text-botanica-400 dark:placeholder:text-botanica-600
+           focus:outline-none focus:ring-2 focus:ring-botanica-400
+           focus:border-transparent transition-all;
+  }
+
+  .section-title {
+    @apply font-display text-3xl md:text-4xl text-botanica-900 dark:text-botanica-50 leading-tight;
+  }
+
+  .theme-toggle {
+    @apply w-9 h-9 flex items-center justify-center rounded-full
+           text-botanica-500 dark:text-botanica-400
+           hover:bg-botanica-100 dark:hover:bg-botanica-800
+           transition-all duration-200 touch-manipulation;
+  }
+}

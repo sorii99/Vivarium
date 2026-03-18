@@ -1,0 +1,37 @@
+import { Routes, Route } from 'react-router-dom'
+import { AuthProvider } from '@/context/AuthContext'
+import { ThemeProvider } from '@/context/ThemeContext'
+import { InventoryProvider } from '@/context/InventoryContext'
+import Layout from '@/components/layout/Layout'
+import RequireAdmin from '@/components/auth/RequireAdmin'
+import Home from '@/pages/Home/Home'
+import Catalog from '@/pages/Catalog/Catalog'
+import ProductDetail from '@/pages/ProductDetail/ProductDetail'
+import Inventory from '@/pages/Inventory/Inventory'
+import AdminLogin from '@/pages/AdminLogin/AdminLogin'
+import AdminDashboard from '@/pages/AdminDashboard/AdminDashboard'
+import NotFound from '@/pages/NotFound'
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <InventoryProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/productos" element={<Catalog />} />
+              <Route path="/productos/:id" element={<ProductDetail />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+            <Route path="/inventario" element={<RequireAdmin><Layout /></RequireAdmin>}>
+              <Route index element={<Inventory />} />
+            </Route>
+          </Routes>
+        </InventoryProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  )
+}

@@ -1,4 +1,4 @@
-# APP NAME: Alta Planta#
+# APP NAME: Alta Planta
 # Contains:
 React (Vite), Tailwind, Supabase.
 # AI used?:

@@ -132,3 +132,37 @@ export async function dbDeleteAll() {
   if (error) { console.error('Supabase deleteAll error:', error); return false }
   return true
 }
+
+export async function dbLoadBanners() {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('banners')
+    .select('*')
+    .order('position')
+  if (error) { console.error('Banners load error:', error); return null }
+  return data
+}
+
+export async function dbInsertBanner(banner) {
+  if (!supabase) return false
+  const { error } = await supabase.from('banners').insert(banner)
+  if (error) { console.error('Banner insert error:', error); return false }
+  return true
+}
+
+export async function dbUpdateBanner(id, changes) {
+  if (!supabase) return false
+  const { error } = await supabase
+    .from('banners')
+    .update({ ...changes, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) { console.error('Banner update error:', error); return false }
+  return true
+}
+
+export async function dbDeleteBanner(id) {
+  if (!supabase) return false
+  const { error } = await supabase.from('banners').delete().eq('id', id)
+  if (error) { console.error('Banner delete error:', error); return false }
+  return true
+}

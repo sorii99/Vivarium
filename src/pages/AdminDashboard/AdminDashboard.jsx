@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import BannerManager from './BannerManager'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore } from '@/context/InventoryContext'
 import { formatPrice } from '@/utils/format'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
-
 
 function PackagingRow({ item, onChange, onRemove }) {
   return (
@@ -13,7 +13,7 @@ function PackagingRow({ item, onChange, onRemove }) {
         type="text"
         value={item.label}
         onChange={e => onChange({ ...item, label: e.target.value })}
-        placeholder="Caja, Bolsa, Cinta…"
+        placeholder="Ej: Caja, Bolsa, Cinta…"
         className="input-field py-1.5 text-xs flex-1"
       />
       <span className="text-botanica-400 text-xs shrink-0">$</span>
@@ -58,19 +58,13 @@ function PriceCalculator() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
 
-        // data is an array of stations — filter Nafta Super and average the prices
         const entries = Array.isArray(data) ? data : (data.data ?? [])
-        const naftaSuper = entries.filter(e => {
+        const naftaPremium = entries.filter(e => {
           const tipo = (e.combustible ?? '').toLowerCase()
-          return tipo.includes('nafta') && (tipo.includes('super') || tipo.includes('súper'))
+          return tipo.includes('nafta') && (tipo.includes('premium') || tipo.includes('premium'))
         })
 
-        if (naftaSuper.length === 0) {
-          setFuelError('No se encontraron datos de Nafta Super')
-          return
-        }
-
-        const precios = naftaSuper
+        const precios = naftaPremium
           .map(e => parseFloat(e.precios?.['día'] ?? e.precios?.dia ?? e.precios?.day ?? 0))
           .filter(p => p > 0)
 
@@ -196,8 +190,8 @@ function PriceCalculator() {
             </div>
             {(logisticRetail > 0 || logisticWholesale > 0) && (
               <div className="mt-2 flex gap-4 text-[10px] font-mono text-botanica-500 dark:text-botanica-400">
-                <span>Minorista ({kms} km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticRetail)}</span></span>
-                <span>Mayorista (×{WHOLESALE_MULT}): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
+                <span>Minorista ({kms}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticRetail)}</span></span>
+                <span>Mayorista (×{WHOLESALE_MULT}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
               </div>
             )}
           </div>
@@ -249,7 +243,7 @@ function PriceCalculator() {
                 <span>{formatPrice(base)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Logística ({kms || '?'} km)</span>
+                <span>Envío ({kms || '?'}km)</span>
                 <span>{formatPrice(logisticRetail)}</span>
               </div>
               <div className="flex justify-between">
@@ -259,7 +253,6 @@ function PriceCalculator() {
             </div>
           </div>
 
-          {/* Wholesale price */}
           <div className={clsx(
             'rounded-xl sm:rounded-2xl p-4 sm:p-6 flex-1',
             'bg-botanica-600 text-white',
@@ -277,7 +270,7 @@ function PriceCalculator() {
                 <span>{formatPrice(base)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Logística (×{WHOLESALE_MULT}km)</span>
+                <span>Envío (×{WHOLESALE_MULT}km)</span>
                 <span>{formatPrice(logisticWholesale)}</span>
               </div>
               <div className="flex justify-between">
@@ -287,13 +280,12 @@ function PriceCalculator() {
             </div>
           </div>
 
-          {/* Reset */}
           {hasResult && (
             <button
               onClick={() => {
-                setFuelPrice(''); setKm(''); setProductCost('')
-                setPackaging([{ id: 1, label: 'Packaging', cost: '' }])
-                setNextId(2)
+                setKm(''); setProductCost('')
+                setPackaging([])
+                setNextId(n => n + 1)
               }}
               className="btn-ghost text-xs text-botanica-400 dark:text-botanica-500 self-start">
               Limpiar calculadora
@@ -545,6 +537,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        <BannerManager />
 
         <PriceCalculator />
 

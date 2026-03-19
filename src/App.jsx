@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { InventoryProvider } from '@/context/InventoryContext'
+import { BannerProvider } from '@/context/BannerContext'
 import Layout from '@/components/layout/Layout'
 import RequireAdmin from '@/components/auth/RequireAdmin'
 import Home from '@/pages/Home/Home'
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <BannerProvider>
         <InventoryProvider>
           <Routes>
             <Route element={<Layout />}>
@@ -31,6 +33,7 @@ export default function App() {
             </Route>
           </Routes>
         </InventoryProvider>
+        </BannerProvider>
       </AuthProvider>
     </ThemeProvider>
   )

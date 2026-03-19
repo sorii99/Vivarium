@@ -7,8 +7,7 @@ import { CATEGORIES } from '@/services/productService'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
 
 const CAT_OPTS = CATEGORIES.filter(c => c.id !== 'all')
-const EMPTY = { name: '', category: 'interior', description: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [] }
-
+const EMPTY = { name: '', category: 'interior', description: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [], featured: false }
 
 function LabeledInput({ label, children }) {
   return (
@@ -246,9 +245,9 @@ export default function Inventory() {
                 {CAT_OPTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
               </select>
             </LabeledInput>
-            <LabeledInput label="Tipo">
+            <LabeledInput label="Unidad">
               <select value={newProd.unit} onChange={e => setNew('unit', e.target.value)} className="input-field py-2 text-sm">
-                {['Planta', 'Bolsa', 'Unidad', 'Kg.', 'Litro'].map(u => <option key={u} value={u}>{u}</option>)}
+                {['planta', 'bolsa', 'unidad', 'kg', 'litro'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </LabeledInput>
             <LabeledInput label="Precio minorista *">
@@ -256,6 +255,9 @@ export default function Inventory() {
             </LabeledInput>
             <LabeledInput label="Precio mayorista *">
               <input type="number" value={newProd.priceWholesale} min={0} onChange={e => setNew('priceWholesale', e.target.value)} placeholder="0" className="input-field py-2 text-sm" />
+            </LabeledInput>
+            <LabeledInput label="Mínimo mayorista">
+              <input type="number" value={newProd.minWholesaleQty} min={1} onChange={e => setNew('minWholesaleQty', e.target.value)} placeholder="1" className="input-field py-2 text-sm" />
             </LabeledInput>
             <LabeledInput label="Stock inicial">
               <input type="number" value={newProd.stock} min={0} onChange={e => setNew('stock', e.target.value)} placeholder="0" className="input-field py-2 text-sm" />
@@ -269,6 +271,25 @@ export default function Inventory() {
           <div className="mb-4 sm:mb-5">
             <label className="block text-xs text-botanica-500 dark:text-botanica-400 mb-2 font-medium">Imágenes</label>
             <ImageUploader images={newProd.images} onChange={imgs => setNew('images', imgs)} />
+          </div>
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              type="button"
+              onClick={() => setNew('featured', !newProd.featured)}
+              className={clsx(
+                'relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0',
+                newProd.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
+              )}>
+              <span className={clsx(
+                'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200',
+                newProd.featured ? 'translate-x-5' : 'translate-x-0'
+              )} />
+            </button>
+            <span
+              className="text-xs text-botanica-500 dark:text-botanica-400 font-medium cursor-pointer select-none"
+              onClick={() => setNew('featured', !newProd.featured)}>
+              Mostrar en destacados de la página de inicio
+            </span>
           </div>
           <div className="flex gap-2">
             <button onClick={saveNew} disabled={!newProd.name || !newProd.priceRetail} className="btn-primary text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed">
@@ -324,6 +345,24 @@ export default function Inventory() {
                     <p className="text-[10px] text-botanica-400 mb-1">Imágenes</p>
                     <ImageUploader images={editing.images || []} onChange={imgs => setEditing(v => ({ ...v, images: imgs }))} />
                   </div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
+                      className={clsx(
+                        'relative w-9 h-4 rounded-full transition-colors duration-200 shrink-0',
+                        editing?.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
+                      )}>
+                      <span className={clsx(
+                        'absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200',
+                        editing?.featured ? 'translate-x-5' : 'translate-x-0'
+                      )} />
+                    </button>
+                    <span className="text-[10px] text-botanica-500 dark:text-botanica-400 cursor-pointer"
+                      onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}>
+                      Destacado
+                    </span>
+                  </div>
                   <div className="flex gap-2 pt-1">
                     <button onClick={saveEdit} className="btn-primary text-xs flex-1">Guardar</button>
                     <button onClick={cancelEdit} className="btn-ghost text-xs">✕</button>
@@ -376,6 +415,7 @@ export default function Inventory() {
                 <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-retail">Minorista</span></th>
                 <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-wholesale">Mayorista</span></th>
                 <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Mín.</th>
+                <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Dest.</th>
                 <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400 min-w-[110px]">Stock</th>
                 {isAdmin && <th className="px-4 py-3 min-w-[130px]" />}
               </tr>
@@ -434,6 +474,25 @@ export default function Inventory() {
                       {isEditing
                         ? <EditField field="minWholesaleQty" type="number" className="w-16 mx-auto" />
                         : <span className="font-mono text-botanica-500 dark:text-botanica-400">{product.minWholesaleQty}</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {isEditing ? (
+                        <button type="button"
+                          onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
+                          className={clsx(
+                            'relative w-9 h-4 rounded-full transition-colors duration-200 focus:outline-none mx-auto block',
+                            editing?.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
+                          )}>
+                          <span className={clsx(
+                            'absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200',
+                            editing?.featured ? 'translate-x-5' : 'translate-x-0'
+                          )} />
+                        </button>
+                      ) : (
+                        <span className={clsx('text-sm',
+                          product.featured ? 'text-botanica-500 dark:text-botanica-400' : 'text-botanica-200 dark:text-botanica-700'
+                        )}>★</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {isEditing

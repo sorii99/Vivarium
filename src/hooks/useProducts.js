@@ -35,7 +35,10 @@ export function useProduct(id) {
 
 export function useFeaturedProducts() {
   const { products } = useInventoryStore()
-  const featured = useMemo(() => products.filter(p => p.featured), [products])
+  const featured = useMemo(() => {
+    const marked = products.filter(p => p.featured)
+    return marked.length > 0 ? marked : products
+  }, [products])
   return { data: featured, isLoading: false }
 }
 
@@ -49,5 +52,5 @@ export function useInventory({ category = 'all', search = '' } = {}) {
     return data
   }, [products, category, search])
 
-  return { data: filtered, isLoading: false, refetch: () => {} }
+  return { data: filtered, isLoading: false, refetch: () => { } }
 }

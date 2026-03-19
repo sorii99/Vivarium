@@ -1,8 +1,309 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore } from '@/context/InventoryContext'
 import { formatPrice } from '@/utils/format'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
+
+
+function PackagingRow({ item, onChange, onRemove }) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        value={item.label}
+        onChange={e => onChange({ ...item, label: e.target.value })}
+        placeholder="Caja, Bolsa, Cinta…"
+        className="input-field py-1.5 text-xs flex-1"
+      />
+      <span className="text-botanica-400 text-xs shrink-0">$</span>
+      <input
+        type="number"
+        onWheel={e => e.target.blur()}
+        value={item.cost}
+        min={0}
+        onChange={e => onChange({ ...item, cost: e.target.value })}
+        placeholder="0"
+        className="input-field py-1.5 text-xs w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      <button
+        onClick={onRemove}
+        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 text-sm px-1 transition-colors shrink-0"
+        title="Eliminar">
+        ×
+      </button>
+    </div>
+  )
+}
+
+function PriceCalculator() {
+  const WHOLESALE_MULT = 18
+
+  const [fuelPrice, setFuelPrice] = useState('')
+  const [km, setKm] = useState('')
+  const [productCost, setProductCost] = useState('')
+  const [packaging, setPackaging] = useState([])
+  const [nextId, setNextId] = useState(2)
+  const [fuelLoading, setFuelLoading] = useState(false)
+  const [fuelError, setFuelError] = useState('')
+
+  useEffect(() => {
+    async function fetchFuel() {
+      setFuelLoading(true)
+      setFuelError('')
+      try {
+        const res = await fetch(
+          'https://api.argly.com.ar/api/combustibles/provincia/buenos-aires'
+        )
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+
+        // data is an array of stations — filter Nafta Super and average the prices
+        const entries = Array.isArray(data) ? data : (data.data ?? [])
+        const naftaSuper = entries.filter(e => {
+          const tipo = (e.combustible ?? '').toLowerCase()
+          return tipo.includes('nafta') && (tipo.includes('super') || tipo.includes('súper'))
+        })
+
+        if (naftaSuper.length === 0) {
+          setFuelError('No se encontraron datos de Nafta Super')
+          return
+        }
+
+        const precios = naftaSuper
+          .map(e => parseFloat(e.precios?.['día'] ?? e.precios?.dia ?? e.precios?.day ?? 0))
+          .filter(p => p > 0)
+
+        if (precios.length === 0) {
+          setFuelError('No se encontró el campo de precio')
+          return
+        }
+
+        const promedio = precios.reduce((a, b) => a + b, 0) / precios.length
+        setFuelPrice(String(Math.round(promedio)))
+      } catch (e) {
+        setFuelError('No se pudo obtener el precio del combustible')
+        console.warn('Fuel fetch error:', e)
+      } finally {
+        setFuelLoading(false)
+      }
+    }
+    fetchFuel()
+  }, [])
+
+  const fuel = parseFloat(fuelPrice) || 0
+  const kms = parseFloat(km) || 0
+
+  const logisticRetail = fuel > 0 && kms > 0 ? (fuel * kms) / 10 : 0
+  const logisticWholesale = fuel > 0 ? (fuel * WHOLESALE_MULT) / 10 : 0
+
+  const packagingTotal = packaging.reduce((sum, p) => sum + (parseFloat(p.cost) || 0), 0)
+
+  const base = parseFloat(productCost) || 0
+  const unitPrice = base + logisticRetail + packagingTotal
+  const mayPrice = base + logisticWholesale + packagingTotal
+
+  const addPackaging = () => {
+    setPackaging(prev => [...prev, { id: nextId, label: '', cost: '' }])
+    setNextId(n => n + 1)
+  }
+
+  const updatePackaging = (id, updated) =>
+    setPackaging(prev => prev.map(p => p.id === id ? updated : p))
+
+  const removePackaging = (id) =>
+    setPackaging(prev => prev.filter(p => p.id !== id))
+
+  const hasResult = base > 0
+
+  return (
+    <div className="mt-8 sm:mt-12">
+      <h2 className="font-display text-lg sm:text-xl text-botanica-800 dark:text-botanica-200 mb-4">
+        Calcular precio
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="card p-4 sm:p-6 space-y-4">
+
+          <div>
+            <label className="block text-xs text-botanica-500 dark:text-botanica-400 font-medium mb-1.5 uppercase tracking-wider">
+              Costo
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-botanica-400 text-sm">$</span>
+              <input
+                type="number"
+                onWheel={e => e.target.blur()}
+                min={0}
+                value={productCost}
+                onChange={e => setProductCost(e.target.value)}
+                placeholder="0"
+                className="input-field pl-7 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-botanica-500 dark:text-botanica-400 font-medium mb-1.5 uppercase tracking-wider">
+              Envío
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] text-botanica-400 dark:text-botanica-500">
+                    Precio combustible por litro
+                  </label>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-botanica-400 text-xs">$</span>
+                  <input
+                    type="number"
+                    onWheel={e => e.target.blur()}
+                    min={0}
+                    value={fuelPrice}
+                    onChange={e => setFuelPrice(e.target.value)}
+                    placeholder={fuelLoading ? 'Cargando…' : '0'}
+                    disabled={fuelLoading}
+                    className="input-field pl-7 pr-8 text-xs py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-60"
+                  />
+                  {fuelLoading && (
+                    <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-botanica-400"
+                      fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                </div>
+                {fuelError && (
+                  <p className="text-[9px] text-amber-500 dark:text-amber-400 mt-1">{fuelError} — ingresalo manualmente</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-[10px] text-botanica-400 dark:text-botanica-500 mb-1">
+                  Kilómetros
+                </label>
+                <input
+                  type="number"
+                  onWheel={e => e.target.blur()}
+                  min={0}
+                  value={km}
+                  onChange={e => setKm(e.target.value)}
+                  placeholder="0"
+                  className="input-field text-xs py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </div>
+            </div>
+            {(logisticRetail > 0 || logisticWholesale > 0) && (
+              <div className="mt-2 flex gap-4 text-[10px] font-mono text-botanica-500 dark:text-botanica-400">
+                <span>Minorista ({kms} km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticRetail)}</span></span>
+                <span>Mayorista (×{WHOLESALE_MULT}): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs text-botanica-500 dark:text-botanica-400 font-medium uppercase tracking-wider">
+                Packaging
+              </label>
+              <button
+                onClick={addPackaging}
+                className="text-[10px] btn-ghost py-1 px-2 text-botanica-500">
+                + Agregar ítem
+              </button>
+            </div>
+            <div className="space-y-2">
+              {packaging.map(item => (
+                <PackagingRow
+                  key={item.id}
+                  item={item}
+                  onChange={updated => updatePackaging(item.id, updated)}
+                  onRemove={() => removePackaging(item.id)}
+                />
+              ))}
+            </div>
+            {packagingTotal > 0 && (
+              <p className="mt-2 text-[10px] font-mono text-botanica-500 dark:text-botanica-400">
+                Total packaging: <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(packagingTotal)}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+
+          <div className={clsx(
+            'card p-4 sm:p-6 flex-1',
+            !hasResult && 'opacity-40'
+          )}>
+            <p className="text-[10px] sm:text-xs text-botanica-500 dark:text-botanica-400 uppercase tracking-wider mb-3">
+              Precio minorista sugerido
+            </p>
+            <p className="font-mono text-2xl sm:text-3xl font-semibold text-botanica-900 dark:text-botanica-100 mb-3">
+              {formatPrice(unitPrice)}
+            </p>
+            <div className="space-y-1 text-[10px] sm:text-xs text-botanica-400 dark:text-botanica-500 font-mono border-t border-botanica-100 dark:border-botanica-800 pt-3">
+              <div className="flex justify-between">
+                <span>Producto</span>
+                <span>{formatPrice(base)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Logística ({kms || '?'} km)</span>
+                <span>{formatPrice(logisticRetail)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Packaging</span>
+                <span>{formatPrice(packagingTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Wholesale price */}
+          <div className={clsx(
+            'rounded-xl sm:rounded-2xl p-4 sm:p-6 flex-1',
+            'bg-botanica-600 text-white',
+            !hasResult && 'opacity-40'
+          )}>
+            <p className="text-[10px] sm:text-xs text-botanica-200 uppercase tracking-wider mb-3">
+              Precio mayorista sugerido
+            </p>
+            <p className="font-mono text-2xl sm:text-3xl font-semibold text-white mb-3">
+              {formatPrice(mayPrice)}
+            </p>
+            <div className="space-y-1 text-[10px] sm:text-xs text-botanica-300 font-mono border-t border-botanica-500 pt-3">
+              <div className="flex justify-between">
+                <span>Producto</span>
+                <span>{formatPrice(base)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Logística (×{WHOLESALE_MULT}km)</span>
+                <span>{formatPrice(logisticWholesale)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Packaging</span>
+                <span>{formatPrice(packagingTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Reset */}
+          {hasResult && (
+            <button
+              onClick={() => {
+                setFuelPrice(''); setKm(''); setProductCost('')
+                setPackaging([{ id: 1, label: 'Packaging', cost: '' }])
+                setNextId(2)
+              }}
+              className="btn-ghost text-xs text-botanica-400 dark:text-botanica-500 self-start">
+              Limpiar calculadora
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function StatCard({ label, value, sub, accent = false }) {
   return (
@@ -56,13 +357,12 @@ export default function AdminDashboard() {
   const sections = [
     { icon: '📦', title: 'Inventario', desc: 'Gestioná stock y precios', link: '/inventario', label: 'Ir al inventario', primary: true },
     { icon: '🛍️', title: 'Catálogo', desc: 'Revisár catalogo', link: '/productos', label: 'Ver catálogo', primary: false },
-    { icon: '🏠', title: 'Inicio', desc: 'Volver al inicio', link: '/', label: 'Volver al inicio', primary: false },
+    { icon: '🏠', title: 'Inicio', desc: 'Volver al inicio', link: '/', label: 'Ver tienda', primary: false },
   ]
 
   return (
     <div className="min-h-screen bg-botanica-50 dark:bg-botanica-950">
 
-      {/* Topbar */}
       <header className="bg-botanica-950 dark:bg-black text-white px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <span className="text-base sm:text-lg shrink-0">🌿</span>
@@ -101,12 +401,32 @@ export default function AdminDashboard() {
           </button>
         </div>
 
+        <h2 className="font-display text-lg sm:text-xl text-botanica-800 dark:text-botanica-200 mb-3 sm:mb-4">Accesos rápidos</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12">
+          {sections.map(({ icon, title, desc, link, label, primary }) => (
+            <div key={title} className="card p-4 sm:p-6 flex sm:flex-col gap-4 items-center sm:items-start">
+              <span className="text-2xl sm:text-3xl shrink-0">{icon}</span>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-base sm:text-lg text-botanica-900 dark:text-botanica-100 mb-0.5 sm:mb-1">{title}</h3>
+                <p className="text-botanica-500 dark:text-botanica-400 text-xs sm:text-sm leading-relaxed hidden sm:block">{desc}</p>
+              </div>
+              <Link to={link}
+                className={clsx(
+                  'shrink-0 sm:w-full text-center text-xs sm:text-sm',
+                  primary ? 'btn-primary' : 'btn-outline'
+                )}>
+                {label}
+              </Link>
+            </div>
+          ))}
+        </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="col-span-2">
             <StatCard label="Total productos" value={stats.total} sub="en catálogo" accent />
           </div>
-          <StatCard label="Valor (min.)" value={formatPrice(stats.totalStockValue)} sub="Stock minorista" />
-          <StatCard label="Valor (may.)" value={formatPrice(stats.totalStockValueWholesale)} sub="Stock mayorista" />
+          <StatCard label="Valor (min.)" value={formatPrice(stats.totalStockValue)} sub="stock minorista" />
+          <StatCard label="Valor (may.)" value={formatPrice(stats.totalStockValueWholesale)} sub="stock mayorista" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -226,25 +546,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <h2 className="font-display text-lg sm:text-xl text-botanica-800 dark:text-botanica-200 mb-3 sm:mb-4">Accesos rápidos</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12">
-          {sections.map(({ icon, title, desc, link, label, primary }) => (
-            <div key={title} className="card p-4 sm:p-6 flex sm:flex-col gap-4 items-center sm:items-start">
-              <span className="text-2xl sm:text-3xl shrink-0">{icon}</span>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-display text-base sm:text-lg text-botanica-900 dark:text-botanica-100 mb-0.5 sm:mb-1">{title}</h3>
-                <p className="text-botanica-500 dark:text-botanica-400 text-xs sm:text-sm leading-relaxed hidden sm:block">{desc}</p>
-              </div>
-              <Link to={link}
-                className={clsx(
-                  'shrink-0 sm:w-full text-center text-xs sm:text-sm',
-                  primary ? 'btn-primary' : 'btn-outline'
-                )}>
-                {label}
-              </Link>
-            </div>
-          ))}
-        </div>
+        <PriceCalculator />
 
       </div>
     </div>

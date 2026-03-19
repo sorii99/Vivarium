@@ -6,7 +6,7 @@ import { formatPrice } from '@/utils/format'
 export default function ProductDetail() {
   const { id } = useParams()
   const { data: product, isLoading, isError } = useProduct(id)
-  const { isWholesale } = useAuth()
+  const { isAdmin, isWholesale } = useAuth()
 
   if (isLoading) return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-8 sm:py-12 grid sm:grid-cols-2 gap-6 sm:gap-10">
@@ -70,28 +70,24 @@ export default function ProductDetail() {
             </div>
           )}
 
-          <div className="bg-botanica-50 dark:bg-botanica-800/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs sm:text-sm text-botanica-600 dark:text-botanica-400">Precio minorista</span>
-              <span className={`font-mono font-semibold text-base sm:text-xl ${!isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 line-through'}`}>
-                {formatPrice(product.priceRetail)}
-              </span>
+          {isAdmin && (
+            <div className="bg-botanica-50 dark:bg-botanica-800/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs sm:text-sm text-botanica-600 dark:text-botanica-400">Precio minorista</span>
+                <span className={`font-mono font-semibold text-base sm:text-xl ${!isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 line-through'}`}>
+                  {formatPrice(product.priceRetail)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs sm:text-sm text-soil-600 dark:text-soil-400">
+                  Precio mayorista{' '}
+                </span>
+                <span className={`font-mono font-semibold text-base sm:text-xl ${isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 dark:text-botanica-500'}`}>
+                  {formatPrice(product.priceWholesale)}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs sm:text-sm text-soil-600 dark:text-soil-400">
-                Precio mayorista{' '}
-                <span className="text-[10px] sm:text-xs opacity-70">(mín. {product.minWholesaleQty}u)</span>
-              </span>
-              <span className={`font-mono font-semibold text-base sm:text-xl ${isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 dark:text-botanica-500'}`}>
-                {formatPrice(product.priceWholesale)}
-              </span>
-            </div>
-            {!isWholesale && (
-              <p className="text-[10px] sm:text-xs text-soil-500 dark:text-soil-400 pt-1">
-                🌿 <Link to="/registro-mayorista" className="underline">Registrate como mayorista</Link> para ver el precio especial
-              </p>
-            )}
-          </div>
+          )}
 
           <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
             Stock:{' '}

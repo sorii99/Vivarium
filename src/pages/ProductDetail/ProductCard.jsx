@@ -27,7 +27,6 @@ export default function ProductCard({ product, compact = false }) {
 
   return (
     <Link to={`/productos/${product.id}`} className="card group block overflow-hidden">
-      {/* Image */}
       <div className={clsx('relative overflow-hidden bg-botanica-100', compact ? 'h-40' : 'h-56')}>
         <img
           src={product.images[0]}
@@ -35,11 +34,9 @@ export default function ProductCard({ product, compact = false }) {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        {/* Category badge */}
         <span className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm text-botanica-700 text-xs px-2 py-1 rounded-full">
           {CATEGORY_ICONS[product.category]} {product.category}
         </span>
-        {/* Low stock warning */}
         {product.stock <= 5 && (
           <span className="absolute top-3 right-3 bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">
             Últimas {product.stock}
@@ -47,7 +44,6 @@ export default function ProductCard({ product, compact = false }) {
         )}
       </div>
 
-      {/* Content */}
       <div className="p-4">
         <h3 className="font-display text-botanica-900 font-semibold text-lg leading-tight mb-1">
           {product.name}

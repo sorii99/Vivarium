@@ -146,7 +146,7 @@ function PriceCalculator() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[10px] text-botanica-400 dark:text-botanica-500">
-                    Precio combustible por litro
+                    Precio del combustible por litro
                   </label>
                 </div>
                 <div className="relative">
@@ -175,7 +175,7 @@ function PriceCalculator() {
               </div>
               <div>
                 <label className="block text-[10px] text-botanica-400 dark:text-botanica-500 mb-1">
-                  Kilómetros
+                  Distancia a recorrer
                 </label>
                 <input
                   type="number"
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
 
   const sections = [
     { icon: '📦', title: 'Inventario', desc: 'Gestioná stock y precios', link: '/inventario', label: 'Ir al inventario', primary: true },
-    { icon: '🛍️', title: 'Catálogo', desc: 'Revisár catalogo', link: '/productos', label: 'Ver catálogo', primary: false },
+    { icon: '🛍️', title: 'Catálogo', desc: 'Consultar disponibilidad', link: '/productos', label: 'Ver catálogo', primary: false },
     { icon: '🏠', title: 'Inicio', desc: 'Volver al inicio', link: '/', label: 'Ver tienda', primary: false },
   ]
 
@@ -383,7 +383,7 @@ export default function AdminDashboard() {
               Hola, {user?.name} 👋
             </h1>
             <p className="text-botanica-500 dark:text-botanica-400 font-body text-sm">
-              Resumen del vivero
+              Resumen
             </p>
           </div>
           <button
@@ -415,10 +415,10 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="col-span-2">
-            <StatCard label="Total productos" value={stats.total} sub="en catálogo" accent />
+            <StatCard label="Total de productos" value={stats.total} sub="en el catálogo" accent />
           </div>
-          <StatCard label="Valor (min.)" value={formatPrice(stats.totalStockValue)} sub="stock minorista" />
-          <StatCard label="Valor (may.)" value={formatPrice(stats.totalStockValueWholesale)} sub="stock mayorista" />
+          <StatCard label="Valor" value={formatPrice(stats.totalStockValue)} sub="del stock" />
+          <StatCard label="Valor" value={formatPrice(stats.totalStockValueWholesale)} sub="de compra" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
 
           <div className="card p-4 sm:p-6">
             <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4 sm:mb-5">
-              Valor por categoría <span className="text-[10px] sm:text-xs text-botanica-400 font-body font-normal">(precio min.)</span>
+              Valor por categoría
             </h2>
             <div className="space-y-2 sm:space-y-3">
               {[

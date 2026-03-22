@@ -1,12 +1,22 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useProduct } from '@/hooks/useProducts'
 import { useAuth } from '@/context/AuthContext'
+import { useCart } from '@/context/CartContext'
 import { formatPrice } from '@/utils/format'
 
 export default function ProductDetail() {
   const { id } = useParams()
   const { data: product, isLoading, isError } = useProduct(id)
-  const { isAdmin, isWholesale } = useAuth()
+  const { isWholesale, isLoggedIn } = useAuth()
+  const { addItem } = useCart()
+  const [added, setAdded] = useState(false)
+
+  const handleAddToCart = () => {
+    addItem(product)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1500)
+  }
 
   if (isLoading) return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-8 sm:py-12 grid sm:grid-cols-2 gap-6 sm:gap-10">
@@ -70,34 +80,39 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {isAdmin && (
-            <div className="bg-botanica-50 dark:bg-botanica-800/60 rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs sm:text-sm text-botanica-600 dark:text-botanica-400">Precio minorista</span>
-                <span className={`font-mono font-semibold text-base sm:text-xl ${!isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 line-through'}`}>
-                  {formatPrice(product.priceRetail)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs sm:text-sm text-soil-600 dark:text-soil-400">
-                  Precio mayorista{' '}
-                </span>
-                <span className={`font-mono font-semibold text-base sm:text-xl ${isWholesale ? 'text-botanica-900 dark:text-botanica-100' : 'text-botanica-400 dark:text-botanica-500'}`}>
-                  {formatPrice(product.priceWholesale)}
-                </span>
-              </div>
+          <div className="flex flex-col gap-3">
+            <div className="font-mono font-semibold text-botanica-800 dark:text-botanica-200 text-2xl sm:text-3xl">
+              {formatPrice(price)}
             </div>
-          )}
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stock === 0 || !isLoggedIn}
+              title={!isLoggedIn ? 'Iniciá sesión para comprar' : undefined}
+              className="btn-primary self-start flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {added ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Agregado
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  {isLoggedIn ? 'Agregar al carrito' : 'Iniciá sesión para comprar'}
+                </>
+              )}
+            </button>
 
-          <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
-            Stock:{' '}
-            <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
-              {product.stock} {product.unit}s disponibles
-            </span>
-          </p>
-
-          <div className="font-mono font-semibold text-botanica-800 dark:text-botanica-200 text-2xl sm:text-3xl">
-            {formatPrice(price)}
+            <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
+              Stock:{' '}
+              <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
+                {product.stock} {product.unit}s disponibles
+              </span>
+            </p>
           </div>
         </div>
       </div>

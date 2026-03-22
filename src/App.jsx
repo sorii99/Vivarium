@@ -1,4 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
+import { CartProvider } from '@/context/CartContext'
+import Checkout from '@/pages/Checkout/Checkout'
+import CheckoutSuccess from '@/pages/Checkout/CheckoutSuccess'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { InventoryProvider } from '@/context/InventoryContext'
@@ -19,11 +22,14 @@ export default function App() {
       <AuthProvider>
         <BannerProvider>
         <InventoryProvider>
+        <CartProvider>
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route path="/productos" element={<Catalog />} />
               <Route path="/productos/:id" element={<ProductDetail />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/success" element={<CheckoutSuccess />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -32,6 +38,7 @@ export default function App() {
               <Route index element={<Inventory />} />
             </Route>
           </Routes>
+        </CartProvider>
         </InventoryProvider>
         </BannerProvider>
       </AuthProvider>

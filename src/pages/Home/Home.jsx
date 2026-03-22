@@ -169,8 +169,6 @@ export default function Home() {
           <div className="text-center py-16">
             <span className="text-5xl block mb-4">🌱</span>
             <p className="font-display text-xl text-botanica-700 dark:text-botanica-300 mb-2">El catálogo está vacío</p>
-            <p className="text-botanica-400 text-sm mb-6">Agregá productos desde el panel de administración.</p>
-            <Link to="/admin/login" className="btn-primary">Ir al panel admin</Link>
           </div>
         ) : isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">

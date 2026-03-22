@@ -1,56 +1,60 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 const CartContext = createContext(null)
+const LS_KEY = 'botanica_cart'
 
-const initialState = { items: [], isOpen: false }
-
-function cartReducer(state, action) {
-  switch (action.type) {
-    case 'ADD_ITEM': {
-      const existing = state.items.find(i => i.id === action.payload.id)
-      if (existing) {
-        return {
-          ...state,
-          items: state.items.map(i =>
-            i.id === action.payload.id
-              ? { ...i, quantity: i.quantity + (action.payload.quantity || 1) }
-              : i
-          )
-        }
-      }
-      return {
-        ...state,
-        items: [...state.items, { ...action.payload, quantity: action.payload.quantity || 1 }]
-      }
-    }
-    case 'REMOVE_ITEM':
-      return { ...state, items: state.items.filter(i => i.id !== action.payload) }
-    case 'UPDATE_QUANTITY':
-      return {
-        ...state,
-        items: state.items.map(i =>
-          i.id === action.payload.id ? { ...i, quantity: action.payload.quantity } : i
-        ).filter(i => i.quantity > 0)
-      }
-    case 'CLEAR_CART':
-      return { ...state, items: [] }
-    case 'TOGGLE_CART':
-      return { ...state, isOpen: !state.isOpen }
-    case 'CLOSE_CART':
-      return { ...state, isOpen: false }
-    default:
-      return state
-  }
+function lsLoad() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
 }
 
 export function CartProvider({ children }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState)
+  const [items, setItems] = useState(() => lsLoad())
+  const [open, setOpen] = useState(false)
 
-  const total = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const itemCount = state.items.reduce((sum, item) => sum + item.quantity, 0)
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(items)) } catch { }
+  }, [items])
+
+  const addItem = useCallback((product) => {
+    setItems(prev => {
+      const existing = prev.find(i => i.id === product.id)
+      if (existing) {
+        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
+      }
+      return [...prev, {
+        id: product.id,
+        name: product.name,
+        image: product.images?.[0] || '',
+        price: product.priceRetail,
+        unit: product.unit,
+        stock: product.stock,
+        qty: 1,
+      }]
+    })
+    setOpen(true)
+  }, [])
+
+  const removeItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), [])
+
+  const updateQty = useCallback((id, qty) => {
+    if (qty <= 0) return removeItem(id)
+    setItems(prev => prev.map(i => i.id === id ? { ...i, qty: Math.min(qty, i.stock) } : i))
+  }, [removeItem])
+
+  const clearCart = useCallback(() => setItems([]), [])
+
+  const totalItems = items.reduce((s, i) => s + i.qty, 0)
+  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0)
 
   return (
-    <CartContext.Provider value={{ ...state, total, itemCount, dispatch }}>
+    <CartContext.Provider value={{
+      items, open, setOpen,
+      addItem, removeItem, updateQty, clearCart,
+      totalItems, subtotal,
+    }}>
       {children}
     </CartContext.Provider>
   )

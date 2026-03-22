@@ -43,12 +43,12 @@ export default function CartDrawer() {
       .then(r => r.json())
       .then(data => {
         const entries = Array.isArray(data) ? data : (data.data ?? [])
-        const naftaSuper = entries.filter(e =>
+        const naftaPremium = entries.filter(e =>
           (e.combustible ?? '').toLowerCase().includes('nafta') &&
-          ((e.combustible ?? '').toLowerCase().includes('super') ||
-            (e.combustible ?? '').toLowerCase().includes('súper'))
+          ((e.combustible ?? '').toLowerCase().includes('premium') ||
+            (e.combustible ?? '').toLowerCase().includes('premium'))
         )
-        const precios = naftaSuper
+        const precios = naftaPremium
           .map(e => parseFloat(e.precios?.['día'] ?? 0))
           .filter(p => p > 0)
         if (precios.length > 0) {

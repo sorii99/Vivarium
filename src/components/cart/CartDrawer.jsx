@@ -31,10 +31,25 @@ export default function CartDrawer() {
   const { items, open, setOpen, removeItem, updateQty, clearCart, subtotal } = useCart()
   const { isLoggedIn } = useAuth()
 
-  const [km, setKm] = useState('')
+  const [deliveryType, setDeliveryType] = useState('pickup')
   const [fuelPrice, setFuelPrice] = useState('')
   const [fuelLoading, setFuelLoading] = useState(false)
   const [shippingCost, setShippingCost] = useState(0)
+  const FIXED_KM = 18
+
+  const [visible, setVisible] = useState(false)
+  const [rendered, setRendered] = useState(open)
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true)
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    } else {
+      setVisible(false)
+      const t = setTimeout(() => setRendered(false), 300)
+      return () => clearTimeout(t)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open || fuelPrice) return
@@ -61,26 +76,12 @@ export default function CartDrawer() {
   }, [open])
 
   useEffect(() => {
+    if (deliveryType === 'pickup') { setShippingCost(0); return }
     const fuel = parseFloat(fuelPrice) || 0
-    const kms = parseFloat(km) || 0
-    setShippingCost(fuel > 0 && kms > 0 ? (fuel * kms) / 10 : 0)
-  }, [fuelPrice, km])
+    setShippingCost(fuel > 0 ? (fuel * FIXED_KM) / 100 : 0)
+  }, [fuelPrice, deliveryType])
 
   const total = subtotal + shippingCost
-
-  const [visible, setVisible] = useState(false)
-  const [rendered, setRendered] = useState(open)
-
-  useEffect(() => {
-    if (open) {
-      setRendered(true)
-      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
-    } else {
-      setVisible(false)
-      const t = setTimeout(() => setRendered(false), 300)
-      return () => clearTimeout(t)
-    }
-  }, [open])
 
   if (!rendered) return null
 
@@ -94,8 +95,8 @@ export default function CartDrawer() {
 
       <div
         className="fixed right-0 top-0 h-full z-50 w-full max-w-sm sm:max-w-md bg-white dark:bg-botanica-900 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out"
-        style={{ transform: visible ? 'translateX(0)' : 'translateX(100%)' }}>
-
+        style={{ transform: visible ? 'translateX(0)' : 'translateX(100%)' }}
+      >
         <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-botanica-100 dark:border-botanica-800">
           <div>
             <h2 className="font-display text-lg text-botanica-900 dark:text-botanica-100">Carrito</h2>
@@ -151,41 +152,35 @@ export default function CartDrawer() {
         {isLoggedIn && items.length > 0 && (
           <div className="border-t border-botanica-100 dark:border-botanica-800 px-4 sm:px-5 py-4 space-y-4">
 
-            <div className="bg-botanica-50 dark:bg-botanica-800/60 rounded-xl p-3 space-y-2">
+            <div className="space-y-2">
               <p className="text-xs font-medium text-botanica-600 dark:text-botanica-400 uppercase tracking-wider">
-                Cálcular envío
+                Modalidad de entrega
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-botanica-400 mb-1">Tarifa base</label>
-                  <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-botanica-400 text-xs">$</span>
-                    <input
-                      type="number" value={fuelPrice}
-                      onChange={e => setFuelPrice(e.target.value)}
-                      onWheel={e => e.target.blur()}
-                      placeholder={fuelLoading ? 'Cargando…' : '0'}
-                      disabled={fuelLoading}
-                      className="input-field pl-6 py-1.5 text-xs w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[10px] text-botanica-400 mb-1">Distancia</label>
-                  <input
-                    type="number" value={km}
-                    onChange={e => setKm(e.target.value)}
-                    onWheel={e => e.target.blur()}
-                    placeholder="0"
-                    className="input-field py-1.5 text-xs w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-between text-xs pt-1">
-                <span className="text-botanica-500 dark:text-botanica-400">Costo del envío</span>
-                <span className="font-mono font-medium text-botanica-700 dark:text-botanica-300">
-                  {shippingCost > 0 ? formatPrice(shippingCost) : '—'}
-                </span>
+                <button
+                  onClick={() => setDeliveryType('pickup')}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs transition-all ${deliveryType === 'pickup'
+                    ? 'border-botanica-500 bg-botanica-50 dark:bg-botanica-800 text-botanica-800 dark:text-botanica-200'
+                    : 'border-botanica-200 dark:border-botanica-700 text-botanica-500 dark:text-botanica-400'
+                    }`}
+                >
+                  <span className="text-xl">📍</span>
+                  <span className="font-medium">Punto de entrega</span>
+                  <span className="text-green-600 dark:text-green-400 font-mono font-semibold">Gratis</span>
+                </button>
+                <button
+                  onClick={() => setDeliveryType('delivery')}
+                  className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs transition-all ${deliveryType === 'delivery'
+                    ? 'border-botanica-500 bg-botanica-50 dark:bg-botanica-800 text-botanica-800 dark:text-botanica-200'
+                    : 'border-botanica-200 dark:border-botanica-700 text-botanica-500 dark:text-botanica-400'
+                    }`}
+                >
+                  <span className="text-xl">🚚</span>
+                  <span className="font-medium">Envío a domicilio</span>
+                  <span className="font-mono font-semibold text-botanica-600 dark:text-botanica-400">
+                    {fuelLoading ? '…' : shippingCost > 0 ? formatPrice(shippingCost) : 'Ver costo'}
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -194,12 +189,12 @@ export default function CartDrawer() {
                 <span className="text-botanica-500 dark:text-botanica-400">Subtotal</span>
                 <span className="font-mono text-botanica-700 dark:text-botanica-300">{formatPrice(subtotal)}</span>
               </div>
-              {shippingCost > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-botanica-500 dark:text-botanica-400">Envío</span>
-                  <span className="font-mono text-botanica-700 dark:text-botanica-300">{formatPrice(shippingCost)}</span>
-                </div>
-              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-botanica-500 dark:text-botanica-400">Envío</span>
+                <span className={`font-mono ${deliveryType === 'pickup' ? 'text-green-600 dark:text-green-400' : 'text-botanica-700 dark:text-botanica-300'}`}>
+                  {deliveryType === 'pickup' ? 'Gratis' : shippingCost > 0 ? formatPrice(shippingCost) : '—'}
+                </span>
+              </div>
               <div className="flex justify-between text-base font-semibold border-t border-botanica-100 dark:border-botanica-800 pt-2">
                 <span className="text-botanica-900 dark:text-botanica-100">Total</span>
                 <span className="font-mono text-botanica-900 dark:text-botanica-100">{formatPrice(total)}</span>
@@ -207,8 +202,12 @@ export default function CartDrawer() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Link to="/checkout" onClick={() => setOpen(false)} className="btn-primary text-center text-sm py-3">
-                Finalizar compra →
+              <Link
+                to={`/checkout?delivery=${deliveryType}&shipping=${shippingCost}`}
+                onClick={() => setOpen(false)}
+                className="btn-primary text-center text-sm py-3"
+              >
+                Continuar →
               </Link>
               <button onClick={clearCart} className="btn-ghost text-xs text-botanica-400 dark:text-botanica-500">
                 Vaciar carrito

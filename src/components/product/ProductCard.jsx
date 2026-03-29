@@ -52,9 +52,14 @@ export default function ProductCard({ product, compact = false }) {
         </h3>
 
         {!compact && (
-          <p className="text-botanica-600 dark:text-botanica-400 text-xs sm:text-sm line-clamp-2 mb-2 sm:mb-3 font-body hidden sm:block">
-            {product.description}
-          </p>
+          <>
+            {product.description && (
+              <p className="text-botanica-600 dark:text-botanica-400 text-xs sm:text-sm line-clamp-2 mb-1.5 sm:mb-2 font-body hidden sm:block">
+                {product.description}
+              </p>
+            )}
+
+          </>
         )}
 
         <div className="flex items-end justify-between gap-1 mt-1 sm:mt-2">

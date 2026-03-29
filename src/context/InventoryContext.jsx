@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import {
   isSupabaseEnabled,
   dbLoadAll, dbInsert, dbUpdate, dbDelete, dbDeleteAll,
@@ -6,11 +6,40 @@ import {
 
 const InventoryContext = createContext(null)
 const STORAGE_KEY = 'botanica_inventory'
+const IMAGES_KEY = 'botanica_images'
+
+function imgCacheLoad() {
+  try { return JSON.parse(localStorage.getItem(IMAGES_KEY) || '{}') } catch { return {} }
+}
+function imgCacheSave(map) {
+  try { localStorage.setItem(IMAGES_KEY, JSON.stringify(map)) } catch { }
+}
+function imgCacheSet(id, b64Array) {
+  const m = imgCacheLoad()
+  if (b64Array.length > 0) m[id] = b64Array
+  else delete m[id]
+  imgCacheSave(m)
+}
+function imgCacheDel(id) {
+  const m = imgCacheLoad()
+  delete m[id]
+  imgCacheSave(m)
+}
+
+function rehydrate(products) {
+  const map = imgCacheLoad()
+  if (Object.keys(map).length === 0) return products
+  return products.map(p =>
+    map[p.id]
+      ? { ...p, images: [...map[p.id], ...(p.images || []).filter(i => !i.startsWith('data:'))] }
+      : p
+  )
+}
 
 function lsLoad() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return null
+    if (!raw) return null
     const parsed = JSON.parse(raw)
     return Array.isArray(parsed) ? parsed : null
   } catch { return null }
@@ -18,19 +47,24 @@ function lsLoad() {
 
 function lsSave(products) {
   try {
-    const json = JSON.stringify(products)
-    if (json.length > 4 * 1024 * 1024) {
-      const stripped = products.map(p => ({
-        ...p, images: (p.images || []).filter(img => !img.startsWith('data:')),
-      }))
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stripped))
-    } else {
-      localStorage.setItem(STORAGE_KEY, json)
-    }
-  } catch (e) { console.warn('localStorage save error:', e) }
+    const stripped = products.map(p => ({
+      ...p,
+      images: (p.images || []).filter(img => !img.startsWith('data:')),
+    }))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stripped))
+    const map = {}
+    products.forEach(p => {
+      const b64 = (p.images || []).filter(img => img.startsWith('data:'))
+      if (b64.length > 0) map[p.id] = b64
+    })
+    imgCacheSave(map)
+  } catch (e) { console.warn('lsSave error:', e) }
 }
 
-function lsClear() { localStorage.removeItem(STORAGE_KEY) }
+function lsClear() {
+  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(IMAGES_KEY)
+}
 
 export function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -45,21 +79,22 @@ export function InventoryProvider({ children }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [syncMode, setSyncMode] = useState(isSupabaseEnabled ? 'supabase' : 'local')
-  const pendingOps = useRef([])
+
   useEffect(() => {
     async function init() {
       if (isSupabaseEnabled) {
         const remote = await dbLoadAll()
         if (remote !== null) {
-          setProducts(remote)
+          setProducts(rehydrate(remote))
           setSyncMode('supabase')
           setLoading(false)
           return
         }
-        console.warn('Supabase unavailable, using localStorage')
+        console.warn('Supabase unavailable, falling back to localStorage')
       }
       setSyncMode('local')
-      setProducts(lsLoad() ?? [])
+      const local = lsLoad()
+      setProducts(local ? rehydrate(local) : [])
       setLoading(false)
     }
     init()
@@ -83,10 +118,21 @@ export function InventoryProvider({ children }) {
       stock: Number(product.stock) || 0,
       unit: product.unit || 'planta',
       images: product.images || [],
+      riego: product.riego || '',
+      sustrato: product.sustrato || '',
+      cuidado: product.cuidado || '',
       featured: product.featured || false,
     }
+
     setProducts(prev => [...prev, newProduct])
-    if (syncMode === 'supabase') await dbInsert(newProduct)
+
+    const b64 = (newProduct.images || []).filter(img => img.startsWith('data:'))
+    if (b64.length > 0) imgCacheSet(id, b64)
+
+    if (syncMode === 'supabase') {
+      await dbInsert(newProduct)
+    }
+
     return id
   }, [syncMode])
 
@@ -100,7 +146,15 @@ export function InventoryProvider({ children }) {
         stock: changes.stock !== undefined ? Number(changes.stock) : p.stock,
       } : p
     ))
-    if (syncMode === 'supabase') await dbUpdate(id, changes)
+
+    if (changes.images !== undefined) {
+      const b64 = changes.images.filter(img => img.startsWith('data:'))
+      imgCacheSet(id, b64)
+    }
+
+    if (syncMode === 'supabase') {
+      await dbUpdate(id, changes)
+    }
   }, [syncMode])
 
   const adjustStock = useCallback(async (id, delta) => {
@@ -115,13 +169,14 @@ export function InventoryProvider({ children }) {
 
   const deleteProduct = useCallback(async (id) => {
     setProducts(prev => prev.filter(p => p.id !== id))
+    imgCacheDel(id)
     if (syncMode === 'supabase') await dbDelete(id)
   }, [syncMode])
 
   const resetToDefaults = useCallback(async () => {
     setProducts([])
+    lsClear()
     if (syncMode === 'supabase') await dbDeleteAll()
-    else lsClear()
   }, [syncMode])
 
   const stats = {
@@ -129,6 +184,9 @@ export function InventoryProvider({ children }) {
     interior: products.filter(p => p.category === 'interior').length,
     exterior: products.filter(p => p.category === 'exterior').length,
     insumos: products.filter(p => p.category === 'insumos').length,
+    quimicos: products.filter(p => p.category === 'quimicos').length,
+    fertilizantes: products.filter(p => p.category === 'fertilizantes').length,
+    macetas: products.filter(p => p.category?.startsWith('macetas')).length,
     lowStock: products.filter(p => p.stock > 0 && p.stock <= 5).length,
     outOfStock: products.filter(p => p.stock === 0).length,
     totalStockValue: products.reduce((s, p) => s + p.priceRetail * p.stock, 0),

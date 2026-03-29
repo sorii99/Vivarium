@@ -138,17 +138,20 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-3">
             {[
-              { emoji: '🪴', label: 'Interior', count: stats.interior },
-              { emoji: '🌳', label: 'Exterior', count: stats.exterior },
-              { emoji: '🌱', label: 'Insumos', count: stats.insumos },
-            ].map(({ emoji, label, count }) => (
-              <Link key={label} to={`/productos?cat=${label.toLowerCase()}`}
-                className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl sm:rounded-2xl p-3 sm:p-6 text-center transition-all duration-300 hover:-translate-y-1">
-                <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">{emoji}</div>
-                <div className="font-display text-white text-xs sm:text-lg leading-tight">{label}</div>
-                <div className="text-botanica-400 text-[10px] sm:text-sm font-mono mt-0.5">{count}</div>
+              { emoji: '🪴', label: 'Interior', cat: 'interior', count: stats.interior },
+              { emoji: '🌳', label: 'Exterior', cat: 'exterior', count: stats.exterior },
+              { emoji: '🌱', label: 'Insumos', cat: 'insumos', count: stats.insumos },
+              { emoji: '🧪', label: 'Químicos', cat: 'quimicos', count: stats.quimicos },
+              { emoji: '🌿', label: 'Fertilizantes', cat: 'fertilizantes', count: stats.fertilizantes },
+              { emoji: '🏺', label: 'Macetas', cat: 'macetas', count: stats.macetas },
+            ].map(({ emoji, label, cat, count }) => (
+              <Link key={cat} to={`/productos?cat=${cat}`}
+                className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl p-2 sm:p-4 text-center transition-all duration-300 hover:-translate-y-1">
+                <div className="text-xl sm:text-3xl mb-1">{emoji}</div>
+                <div className="font-display text-white text-[10px] sm:text-sm leading-tight">{label}</div>
+                <div className="text-botanica-400 text-[9px] sm:text-xs font-mono mt-0.5">{count}</div>
               </Link>
             ))}
           </div>
@@ -161,6 +164,7 @@ export default function Home() {
             <p className="text-botanica-500 dark:text-botanica-400 text-xs sm:text-sm mb-1 font-body tracking-wide uppercase">
               Destacados
             </p>
+            <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Más buscados</h2>
           </div>
           <Link to="/productos" className="btn-ghost text-xs sm:text-sm shrink-0">Ver todos →</Link>
         </div>

@@ -68,6 +68,36 @@ export default function ProductDetail() {
             {product.description}
           </p>
 
+          {(product.riego || product.sustrato || product.cuidado) && (
+            <div className="flex flex-col gap-3 mt-4 mb-4">
+              {product.riego && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
+                  <p className="text-[10px] text-blue-500 dark:text-blue-400 font-medium uppercase tracking-wider mb-1">💧 Riego</p>
+                  <p className="text-sm text-botanica-800 dark:text-botanica-200">{product.riego}</p>
+                </div>
+              )}
+              {product.sustrato && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 border border-amber-100 dark:border-amber-800">
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider mb-1">🪨 Sustrato</p>
+                  <p className="text-sm text-botanica-800 dark:text-botanica-200">{product.sustrato}</p>
+                </div>
+              )}
+              {product.cuidado && (
+                <div className="bg-botanica-50 dark:bg-botanica-800/60 rounded-xl p-3 border border-botanica-200 dark:border-botanica-700">
+                  <p className="text-[10px] text-botanica-500 dark:text-botanica-400 font-medium uppercase tracking-wider mb-1">🌿 Cuidado</p>
+                  <p className="text-sm text-botanica-800 dark:text-botanica-200">{product.cuidado}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
+            Stock:{' '}
+            <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
+              {product.stock} {product.unit}s disponibles
+            </span>
+          </p>
+
           {product.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
               {product.tags.map(tag => (
@@ -106,13 +136,6 @@ export default function ProductDetail() {
                 </>
               )}
             </button>
-
-            <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
-              Stock:{' '}
-              <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
-                {product.stock} {product.unit}s disponibles
-              </span>
-            </p>
           </div>
         </div>
       </div>

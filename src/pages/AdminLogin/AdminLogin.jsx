@@ -71,7 +71,7 @@ function fieldClass(hasError) {
 const labelClass = 'block text-botanica-300 text-xs font-body font-medium mb-1.5 uppercase tracking-wider'
 
 export default function AdminLogin() {
-  const { loginAdmin, register, isAdmin, authLoading } = useAuth()
+  const { loginAdmin, register, isLoggedIn, isAdmin, authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || '/admin'
@@ -92,7 +92,7 @@ export default function AdminLogin() {
   const [formError, setFormError] = useState('')
 
   useEffect(() => {
-    if (!authLoading && isAdmin) navigate(from, { replace: true })
+    if (!authLoading && isLoggedIn) navigate(isAdmin ? (from || '/admin') : '/', { replace: true })
   }, [isAdmin, authLoading])
 
   const switchTab = (t) => {
@@ -134,7 +134,7 @@ export default function AdminLogin() {
     setLoading(false)
 
     if (result.ok) {
-      navigate(from, { replace: true })
+      navigate(result.role === 'admin' ? (from || '/admin') : '/', { replace: true })
     } else {
       setAttempts(a => a + 1)
       setFormError(result.error)
@@ -240,7 +240,7 @@ export default function AdminLogin() {
                     value={email}
                     onChange={setField(setEmail, 'email', validateEmail)}
                     onBlur={blurValidate('email', () => validateEmail(email))}
-                    placeholder="ejemplo@email.com"
+                    placeholder="Ingresa tu correo"
                     className={fieldClass(fieldErrors.email)}
                   />
                   {fieldErrors.email && (
@@ -282,14 +282,14 @@ export default function AdminLogin() {
               <form onSubmit={handleRegister} className="space-y-4" noValidate>
 
                 <div>
-                  <label className={labelClass}>Nombre</label>
+                  <label className={labelClass}>Nombre completo</label>
                   <input
                     type="text"
                     autoComplete="name"
                     value={name}
                     onChange={setField(setName, 'name', (v) => v.trim() ? '' : 'El nombre es obligatorio')}
                     onBlur={blurValidate('name', () => name.trim() ? '' : 'El nombre es obligatorio')}
-                    placeholder="Tu nombre"
+                    placeholder="Ingresa tu nombre completo"
                     className={fieldClass(fieldErrors.name)}
                   />
                   {fieldErrors.name && (
@@ -305,7 +305,7 @@ export default function AdminLogin() {
                     value={email}
                     onChange={setField(setEmail, 'email', validateEmail)}
                     onBlur={blurValidate('email', () => validateEmail(email))}
-                    placeholder="tu@email.com"
+                    placeholder="Ingresa tu correo"
                     className={fieldClass(fieldErrors.email)}
                   />
                   {fieldErrors.email && (
@@ -360,14 +360,6 @@ export default function AdminLogin() {
                 </div>
 
                 <ErrorBox message={formError} />
-
-                <div className="bg-botanica-800/50 border border-botanica-700/50 rounded-xl px-4 py-3">
-                  <p className="text-botanica-400 text-xs leading-relaxed">
-                    <span className="text-botanica-300 font-medium">ℹ️ Permisos:</span>{' '}
-                    Las cuentas nuevas tienen el rol <span className="font-mono text-botanica-300">retail</span>.
-                    Para acceder a todas las funciones, deben&nbsp;asignarte el rol de <span className="font-mono text-botanica-300">admin</span>.
-                  </p>
-                </div>
 
                 <button type="submit" disabled={loading || !email || !password || !name}
                   className="w-full bg-botanica-600 hover:bg-botanica-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-body font-medium py-3 rounded-xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2">

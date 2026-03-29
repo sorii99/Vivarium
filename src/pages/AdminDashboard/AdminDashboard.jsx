@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import BannerManager from './BannerManager'
 import { Link } from 'react-router-dom'
+import { getSetting, setSetting } from '@/services/settings'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore } from '@/context/InventoryContext'
 import { formatPrice } from '@/utils/format'
@@ -64,6 +65,11 @@ function PriceCalculator() {
           return tipo.includes('nafta') && (tipo.includes('premium') || tipo.includes('premium'))
         })
 
+        if (naftaPremium.length === 0) {
+          setFuelError('No se encontraron datos de Nafta premium')
+          return
+        }
+
         const precios = naftaPremium
           .map(e => parseFloat(e.precios?.['día'] ?? e.precios?.dia ?? e.precios?.day ?? 0))
           .filter(p => p > 0)
@@ -88,8 +94,8 @@ function PriceCalculator() {
   const fuel = parseFloat(fuelPrice) || 0
   const kms = parseFloat(km) || 0
 
-  const logisticRetail = fuel > 0 && kms > 0 ? (fuel * kms) / 10 : 0
-  const logisticWholesale = fuel > 0 ? (fuel * WHOLESALE_MULT) / 10 : 0
+  const logisticRetail = fuel > 0 && kms > 0 ? (fuel * kms) / 100 : 0
+  const logisticWholesale = fuel > 0 ? (fuel * WHOLESALE_MULT) / 100 : 0
 
   const packagingTotal = packaging.reduce((sum, p) => sum + (parseFloat(p.cost) || 0), 0)
 
@@ -146,7 +152,7 @@ function PriceCalculator() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[10px] text-botanica-400 dark:text-botanica-500">
-                    Precio del combustible por litro
+                    Precio combustible por litro
                   </label>
                 </div>
                 <div className="relative">
@@ -191,7 +197,7 @@ function PriceCalculator() {
             {(logisticRetail > 0 || logisticWholesale > 0) && (
               <div className="mt-2 flex gap-4 text-[10px] font-mono text-botanica-500 dark:text-botanica-400">
                 <span>Minorista ({kms}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticRetail)}</span></span>
-                <span>Mayorista (×{WHOLESALE_MULT}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
+                <span>Mayorista (×{WHOLESALE_MULT}): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
               </div>
             )}
           </div>
@@ -297,6 +303,48 @@ function PriceCalculator() {
   )
 }
 
+
+function AppSettings() {
+  const [mpEnabled, setMpEnabled] = useState(() => getSetting('mpEnabled'))
+
+  const toggle = () => {
+    const next = !mpEnabled
+    setMpEnabled(next)
+    setSetting('mpEnabled', next)
+  }
+
+  return (
+    <div className="mt-8 sm:mt-12">
+      <h2 className="font-display text-lg sm:text-xl text-botanica-800 dark:text-botanica-200 mb-4">
+        Configuración
+      </h2>
+      <div className="card p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-botanica-800 dark:text-botanica-200">
+              Pago con Mercado Pago
+            </p>
+            <p className="text-xs text-botanica-500 dark:text-botanica-400 mt-0.5">
+              {mpEnabled
+                ? 'El botón de Mercado Pago se muestra como opción de pago.'
+                : 'El botón de Mercado Pago está oculto, no sera mostrado como opción de pago.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggle}
+            className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none shrink-0 ${mpEnabled ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'}`}
+          >
+            <span
+              className={`inline-block w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${mpEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StatCard({ label, value, sub, accent = false }) {
   return (
     <div className={clsx(
@@ -348,6 +396,8 @@ export default function AdminDashboard() {
 
   const sections = [
     { icon: '📦', title: 'Inventario', desc: 'Gestioná stock y precios', link: '/inventario', label: 'Ir al inventario', primary: true },
+    { icon: '👥', title: 'Clientes', desc: 'Listado de clientes', link: '/clientes', label: 'Ver clientes', primary: false },
+    { icon: '🧾', title: 'Ventas', desc: 'Historial de órdenes y pagos', link: '/ventas', label: 'Ver ventas', primary: false },
     { icon: '🛍️', title: 'Catálogo', desc: 'Consultar disponibilidad', link: '/productos', label: 'Ver catálogo', primary: false },
     { icon: '🏠', title: 'Inicio', desc: 'Volver al inicio', link: '/', label: 'Ver tienda', primary: false },
   ]
@@ -383,7 +433,7 @@ export default function AdminDashboard() {
               Hola, {user?.name} 👋
             </h1>
             <p className="text-botanica-500 dark:text-botanica-400 font-body text-sm">
-              Resumen
+              Resumen en tiempo real del negocio
             </p>
           </div>
           <button
@@ -394,7 +444,7 @@ export default function AdminDashboard() {
         </div>
 
         <h2 className="font-display text-lg sm:text-xl text-botanica-800 dark:text-botanica-200 mb-3 sm:mb-4">Accesos rápidos</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12">
           {sections.map(({ icon, title, desc, link, label, primary }) => (
             <div key={title} className="card p-4 sm:p-6 flex sm:flex-col gap-4 items-center sm:items-start">
               <span className="text-2xl sm:text-3xl shrink-0">{icon}</span>
@@ -415,10 +465,10 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="col-span-2">
-            <StatCard label="Total de productos" value={stats.total} sub="en el catálogo" accent />
+            <StatCard label="Total productos" value={stats.total} sub="en catálogo" accent />
           </div>
-          <StatCard label="Valor" value={formatPrice(stats.totalStockValue)} sub="del stock" />
           <StatCard label="Valor" value={formatPrice(stats.totalStockValueWholesale)} sub="de compra" />
+          <StatCard label="Valor" value={formatPrice(stats.totalStockValue)} sub="del stock" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -427,10 +477,13 @@ export default function AdminDashboard() {
             <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4 sm:mb-5">
               Por categoría
             </h2>
-            <div className="space-y-4 sm:space-y-5">
+            <div className="space-y-3 sm:space-y-4">
               <CategoryBar label="Interior" icon="🪴" count={stats.interior} total={stats.total} color="bg-botanica-500" />
               <CategoryBar label="Exterior" icon="🌳" count={stats.exterior} total={stats.total} color="bg-botanica-400" />
               <CategoryBar label="Insumos" icon="🌱" count={stats.insumos} total={stats.total} color="bg-soil-400" />
+              <CategoryBar label="Químicos" icon="🧪" count={stats.quimicos} total={stats.total} color="bg-purple-400" />
+              <CategoryBar label="Fertilizantes" icon="🌿" count={stats.fertilizantes} total={stats.total} color="bg-emerald-400" />
+              <CategoryBar label="Macetas" icon="🏺" count={stats.macetas} total={stats.total} color="bg-amber-400" />
             </div>
           </div>
 
@@ -443,8 +496,11 @@ export default function AdminDashboard() {
                 { label: 'Interior', icon: '🪴', cat: 'interior' },
                 { label: 'Exterior', icon: '🌳', cat: 'exterior' },
                 { label: 'Insumos', icon: '🌱', cat: 'insumos' },
+                { label: 'Químicos', icon: '🧪', cat: 'quimicos' },
+                { label: 'Fertilizantes', icon: '🌿', cat: 'fertilizantes' },
+                { label: 'Macetas', icon: '🏺', cat: 'macetas' },
               ].map(({ label, icon, cat }) => {
-                const cp = products.filter(p => p.category === cat)
+                const cp = products.filter(p => cat === 'macetas' ? p.category?.startsWith('macetas') : p.category === cat)
                 const val = cp.reduce((s, p) => s + p.priceRetail * p.stock, 0)
                 return (
                   <div key={cat} className="flex items-center justify-between py-2 sm:py-2.5 border-b border-botanica-50 dark:border-botanica-800 last:border-0">
@@ -539,6 +595,8 @@ export default function AdminDashboard() {
         )}
 
         <BannerManager />
+
+        <AppSettings />
 
         <PriceCalculator />
 

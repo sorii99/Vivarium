@@ -101,18 +101,15 @@ export function AuthProvider({ children }) {
       profile = await getProfile(result.user.id)
     }
 
-    if ((profile?.role || 'retail') !== 'admin') {
-      await authSignOut()
-      return { ok: false, error: 'Tu cuenta no tiene permisos de administrador' }
-    }
+    const role = profile?.role || 'retail'
 
     setUser({
       id: result.user.id,
       email: result.user.email,
-      name: profile.name || result.user.user_metadata?.name || result.user.email.split('@')[0],
-      role: 'admin',
+      name: profile?.name || result.user.user_metadata?.name || result.user.email.split('@')[0],
+      role,
     })
-    return { ok: true }
+    return { ok: true, role }
   }
 
   const logout = async () => {

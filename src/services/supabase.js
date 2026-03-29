@@ -27,8 +27,11 @@ function toRow(p) {
     min_wholesale_qty: Number(p.minWholesaleQty) || 1,
     stock: Number(p.stock) || 0,
     unit: p.unit || 'planta',
-    images: p.images || [],
+    images: (p.images || []).filter(img => !img.startsWith('data:')),
     featured: p.featured || false,
+    riego: p.riego || '',
+    sustrato: p.sustrato || '',
+    cuidado: p.cuidado || '',
   }
 }
 
@@ -47,6 +50,9 @@ export function fromRow(r) {
     unit: r.unit,
     images: r.images || [],
     featured: r.featured || false,
+    riego: r.riego || '',
+    sustrato: r.sustrato || '',
+    cuidado: r.cuidado || '',
   }
 }
 
@@ -110,11 +116,30 @@ export async function dbInsert(product) {
 
 export async function dbUpdate(id, changes) {
   if (!supabase) return false
-  const row = toRow({ id, ...changes })
-  const { error } = await supabase
-    .from('products')
-    .update({ ...row, updated_at: new Date().toISOString() })
-    .eq('id', id)
+  const colMap = {
+    name: 'name',
+    category: 'category',
+    description: 'description',
+    tags: 'tags',
+    priceRetail: 'price_retail',
+    priceWholesale: 'price_wholesale',
+    minWholesaleQty: 'min_wholesale_qty',
+    stock: 'stock',
+    unit: 'unit',
+    featured: 'featured',
+    riego: 'riego',
+    sustrato: 'sustrato',
+    cuidado: 'cuidado',
+  }
+  const row = { updated_at: new Date().toISOString() }
+  Object.entries(changes).forEach(([k, v]) => {
+    if (k === 'images') {
+      row.images = (v || []).filter(img => !img.startsWith('data:'))
+    } else if (colMap[k]) {
+      row[colMap[k]] = v
+    }
+  })
+  const { error } = await supabase.from('products').update(row).eq('id', id)
   if (error) { console.error('Supabase update error:', error); return false }
   return true
 }
@@ -133,6 +158,37 @@ export async function dbDeleteAll() {
   return true
 }
 
+function bannerToRow(b) {
+  const row = {
+    id: b.id,
+    position: b.position ?? 0,
+    tag: b.tag || '',
+    title: b.title || '',
+    subtitle: b.subtitle || '',
+    description: b.desc || b.description || '',
+    cta: b.cta || '',
+    to: b.to || '/productos',
+    accent: b.accent || '#4a8539',
+    image: b.image || '',
+  }
+  return row
+}
+
+function bannerFromRow(r) {
+  return {
+    id: r.id,
+    position: r.position ?? 0,
+    tag: r.tag || '',
+    title: r.title || '',
+    subtitle: r.subtitle || '',
+    desc: r.description || '',
+    cta: r.cta || '',
+    to: r.to || '/productos',
+    accent: r.accent || '#4a8539',
+    image: r.image || '',
+  }
+}
+
 export async function dbLoadBanners() {
   if (!supabase) return null
   const { data, error } = await supabase
@@ -140,21 +196,22 @@ export async function dbLoadBanners() {
     .select('*')
     .order('position')
   if (error) { console.error('Banners load error:', error); return null }
-  return data
+  return data.map(bannerFromRow)
 }
 
 export async function dbInsertBanner(banner) {
   if (!supabase) return false
-  const { error } = await supabase.from('banners').insert(banner)
+  const { error } = await supabase.from('banners').insert(bannerToRow(banner))
   if (error) { console.error('Banner insert error:', error); return false }
   return true
 }
 
 export async function dbUpdateBanner(id, changes) {
   if (!supabase) return false
+  const row = bannerToRow({ id, ...changes })
   const { error } = await supabase
     .from('banners')
-    .update({ ...changes, updated_at: new Date().toISOString() })
+    .update(row)
     .eq('id', id)
   if (error) { console.error('Banner update error:', error); return false }
   return true

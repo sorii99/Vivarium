@@ -26,6 +26,45 @@ function lsIsInitialized() {
   return localStorage.getItem(LS_INIT_KEY) === '1'
 }
 
+const DEFAULT_BANNERS = [
+  {
+    id: '1',
+    position: 0,
+    tag: '🌿 Novedad',
+    title: 'Plantas de temporada',
+    subtitle: 'Interior · Exterior · Insumos',
+    desc: 'Renovamos el stock cada semana con las mejores variedades seleccionadas.',
+    cta: 'Ver catálogo',
+    to: '/productos',
+    accent: '#6ba35a',
+    image: '',
+  },
+  {
+    id: '2',
+    position: 1,
+    tag: '💰 Precios mayoristas',
+    title: 'Comprá en volumen',
+    subtitle: 'Precios especiales para revendedores',
+    desc: 'Mínimos por categoría, atención personalizada y entregas programadas.',
+    cta: 'Registrarme',
+    to: '/registro-mayorista',
+    accent: '#97c188',
+    image: '',
+  },
+  {
+    id: '3',
+    position: 2,
+    tag: '🌱 Insumos',
+    title: 'Todo para tu jardín',
+    subtitle: 'Sustratos · Fertilizantes · Macetas',
+    desc: 'Los mejores insumos para que tus plantas crezcan sanas.',
+    cta: 'Ver insumos',
+    to: '/productos?cat=insumos',
+    accent: '#4a8539',
+    image: '',
+  },
+]
+
 export function BannerProvider({ children }) {
   const [banners, setBanners] = useState(() => {
     try {
@@ -34,8 +73,9 @@ export function BannerProvider({ children }) {
         if (saved !== null) return saved
       }
     } catch { }
-    return []
+    return DEFAULT_BANNERS
   })
+
   const [ready, setReady] = useState(false)
   const [syncMode, setSyncMode] = useState('local')
 
@@ -43,59 +83,47 @@ export function BannerProvider({ children }) {
     async function init() {
       if (isSupabaseEnabled) {
         const remote = await dbLoadBanners()
+
         if (remote !== null) {
           setSyncMode('supabase')
-          setBanners(remote)
+
+          if (remote.length > 0) {
+            setBanners(remote)
+            localStorage.setItem('botanica_banners_seeded', '1')
+            setReady(true)
+            return
+          }
+
+          const alreadySeeded = localStorage.getItem('botanica_banners_seeded') === '1'
+          if (alreadySeeded) {
+            setBanners([])
+            setReady(true)
+            return
+          }
+
+          const localBanners = (lsIsInitialized() && lsLoad()?.length > 0)
+            ? lsLoad()
+            : DEFAULT_BANNERS
+
+          for (const b of localBanners) {
+            await dbInsertBanner(b)
+          }
+          localStorage.setItem('botanica_banners_seeded', '1')
+          setBanners(localBanners)
           setReady(true)
           return
         }
       }
+
       if (lsIsInitialized()) {
         setBanners(lsLoad() ?? [])
       } else {
-        const defaults = [
-          {
-            id: String(Date.now()),
-            position: 0,
-            tag: '🌿 Novedad',
-            title: 'Plantas de temporada',
-            subtitle: 'Interior · Exterior · Insumos',
-            desc: 'Renovamos el stock cada semana con las mejores variedades seleccionadas.',
-            cta: 'Ver catálogo',
-            to: '/productos',
-            accent: '#6ba35a',
-            image: '',
-          },
-          {
-            id: String(Date.now() + 1),
-            position: 1,
-            tag: '💰 Precios mayoristas',
-            title: 'Comprá en volumen',
-            subtitle: 'Precios especiales para revendedores',
-            desc: 'Mínimos por categoría, atención personalizada y entregas programadas.',
-            cta: 'Registrarme',
-            to: '/registro-mayorista',
-            accent: '#97c188',
-            image: '',
-          },
-          {
-            id: String(Date.now() + 2),
-            position: 2,
-            tag: '🌱 Insumos',
-            title: 'Todo para tu jardín',
-            subtitle: 'Sustratos · Fertilizantes · Macetas',
-            desc: 'Los mejores insumos para que tus plantas crezcan sanas.',
-            cta: 'Ver insumos',
-            to: '/productos?cat=insumos',
-            accent: '#4a8539',
-            image: '',
-          },
-        ]
-        setBanners(defaults)
-        lsSave(defaults)
+        lsSave(DEFAULT_BANNERS)
+        setBanners(DEFAULT_BANNERS)
       }
       setReady(true)
     }
+
     init()
   }, [])
 
@@ -141,7 +169,7 @@ export function BannerProvider({ children }) {
   }, [syncMode])
 
   return (
-    <BannerContext.Provider value={{ banners, ready, addBanner, updateBanner, deleteBanner, moveBanner }}>
+    <BannerContext.Provider value={{ banners, ready, syncMode, addBanner, updateBanner, deleteBanner, moveBanner }}>
       {children}
     </BannerContext.Provider>
   )

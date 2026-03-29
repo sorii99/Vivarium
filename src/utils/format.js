@@ -16,13 +16,29 @@ export function slugify(str) {
 }
 
 export const CATEGORY_LABELS = {
-  interior: 'Interior',
-  exterior: 'Exterior',
-  insumos:  'Insumos',
+  interior:          'Interior',
+  exterior:          'Exterior',
+  insumos:           'Insumos',
+  quimicos:          'Químicos',
+  fertilizantes:     'Fertilizantes',
+  macetas:           'Macetas',
+  'macetas-plastico':  'Plástico',
+  'macetas-ceramica':  'Cerámica',
+  'macetas-terracota': 'Terracota',
+  'macetas-madera':    'Madera',
+  'macetas-colgante':  'Colgante',
 }
 
 export const CATEGORY_ICONS = {
-  interior: '🪴',
-  exterior: '🌳',
-  insumos:  '🌱',
+  interior:          '🪴',
+  exterior:          '🌳',
+  insumos:           '🌱',
+  quimicos:          '🧪',
+  fertilizantes:     '🌿',
+  macetas:           '🏺',
+  'macetas-plastico':  '🏺',
+  'macetas-ceramica':  '🏺',
+  'macetas-terracota': '🏺',
+  'macetas-madera':    '🏺',
+  'macetas-colgante':  '🏺',
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
 import { useInventoryStore } from '@/context/InventoryContext'
+import { supabase } from '@/services/supabase'
 
 export default function CheckoutSuccess() {
   const { items, clearCart } = useCart()
@@ -20,6 +21,14 @@ export default function CheckoutSuccess() {
       const newStock = Math.max(0, product.stock - item.qty)
       updateProduct(item.id, { stock: newStock })
     })
+
+    const ref = new URLSearchParams(window.location.search).get('external_reference')
+    if (ref && supabase) {
+      supabase.from('orders')
+        .update({ status: 'approved' })
+        .eq('reference', ref)
+        .then(({ error }) => { if (error) console.warn('Order status update error:', error) })
+    }
 
     clearCart()
   }, [status])

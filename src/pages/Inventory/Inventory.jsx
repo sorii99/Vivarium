@@ -3,11 +3,11 @@ import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore, fileToDataUrl } from '@/context/InventoryContext'
 import { useInventory } from '@/hooks/useProducts'
 import { formatPrice } from '@/utils/format'
-import { CATEGORIES } from '@/services/productService'
+import { CATEGORIES, CATEGORY_OPTIONS } from '@/services/productService'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
 
-const CAT_OPTS = CATEGORIES.filter(c => c.id !== 'all')
-const EMPTY = { name: '', category: 'interior', description: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [], featured: false }
+const CAT_OPTS = CATEGORY_OPTIONS
+const EMPTY = { name: '', category: 'interior', description: '', riego: '', sustrato: '', cuidado: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [], featured: false }
 
 function LabeledInput({ label, children }) {
   return (
@@ -128,7 +128,7 @@ export default function Inventory() {
   const saveNew = () => { addProduct(newProd); setNewProd({ ...EMPTY }); setAdding(false) }
   const cancelAdd = () => { setAdding(false); setNewProd({ ...EMPTY }) }
 
-  const VALID_CATS = new Set(['interior', 'exterior', 'insumos'])
+  const VALID_CATS = new Set(['interior', 'exterior', 'insumos', 'quimicos', 'fertilizantes', 'macetas', 'macetas-plastico', 'macetas-ceramica', 'macetas-terracota', 'macetas-madera', 'macetas-colgante'])
 
   const parseCSV = (text) => {
     const lines = text.trim().split(/\r?\n/)
@@ -195,12 +195,20 @@ export default function Inventory() {
     if (as === 'select') return (
       <select value={editing[field]} onChange={e => setEditing(v => ({ ...v, [field]: e.target.value }))}
         className={clsx('input-field py-1 text-xs', className)}>
-        {opts.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        {opts.filter(o => !o.isParent).map(o => (
+          <option key={o.id} value={o.id}>{o.label}</option>
+        ))}
       </select>
     )
     return (
-      <input type={type} value={editing[field] ?? ''} onChange={e => setEditing(v => ({ ...v, [field]: e.target.value }))}
-        className={clsx('input-field py-1 text-xs', className)} min={type === 'number' ? 0 : undefined} />
+      <input
+        type={type}
+        value={editing[field] ?? ''}
+        onChange={e => setEditing(v => ({ ...v, [field]: e.target.value }))}
+        onWheel={type === 'number' ? e => e.target.blur() : undefined}
+        className={clsx('input-field py-1 text-xs', type === 'number' && '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none', className)}
+        min={type === 'number' ? 0 : undefined}
+      />
     )
   }
 
@@ -210,6 +218,9 @@ export default function Inventory() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
         <div>
           <h1 className="section-title text-2xl sm:text-3xl md:text-4xl mb-1">Inventario</h1>
+          <p className="text-botanica-500 dark:text-botanica-400 text-xs sm:text-sm">
+            {isAdmin ? 'Administrar precios y productos' : ''}
+          </p>
         </div>
         {isAdmin && (
           <div className="flex flex-wrap gap-2">
@@ -242,7 +253,9 @@ export default function Inventory() {
             </LabeledInput>
             <LabeledInput label="Categoría">
               <select value={newProd.category} onChange={e => setNew('category', e.target.value)} className="input-field py-2 text-sm">
-                {CAT_OPTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                {CAT_OPTS.filter(o => !o.isParent).map(o => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
               </select>
             </LabeledInput>
             <LabeledInput label="Unidad">
@@ -251,21 +264,32 @@ export default function Inventory() {
               </select>
             </LabeledInput>
             <LabeledInput label="Precio minorista *">
-              <input type="number" value={newProd.priceRetail} min={0} onChange={e => setNew('priceRetail', e.target.value)} placeholder="0" className="input-field py-2 text-sm" />
+              <input type="number" value={newProd.priceRetail} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('priceRetail', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
             <LabeledInput label="Precio mayorista *">
-              <input type="number" value={newProd.priceWholesale} min={0} onChange={e => setNew('priceWholesale', e.target.value)} placeholder="0" className="input-field py-2 text-sm" />
+              <input type="number" value={newProd.priceWholesale} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('priceWholesale', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
             <LabeledInput label="Mínimo mayorista">
-              <input type="number" value={newProd.minWholesaleQty} min={1} onChange={e => setNew('minWholesaleQty', e.target.value)} placeholder="1" className="input-field py-2 text-sm" />
+              <input type="number" value={newProd.minWholesaleQty} min={1} onWheel={e => e.target.blur()} onChange={e => setNew('minWholesaleQty', e.target.value)} placeholder="1" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
             <LabeledInput label="Stock inicial">
-              <input type="number" value={newProd.stock} min={0} onChange={e => setNew('stock', e.target.value)} placeholder="0" className="input-field py-2 text-sm" />
+              <input type="number" value={newProd.stock} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('stock', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
           </div>
           <div className="mb-3 sm:mb-4">
             <LabeledInput label="Descripción">
               <textarea value={newProd.description} onChange={e => setNew('description', e.target.value)} placeholder="Descripción breve…" rows={2} className="input-field py-2 text-sm resize-none" />
+            </LabeledInput>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">
+            <LabeledInput label="💧 Riego">
+              <input type="text" value={newProd.riego} onChange={e => setNew('riego', e.target.value)} placeholder="Ej: 2 veces/semana" className="input-field py-2 text-sm" />
+            </LabeledInput>
+            <LabeledInput label="🪨 Sustrato">
+              <input type="text" value={newProd.sustrato} onChange={e => setNew('sustrato', e.target.value)} placeholder="Ej: Tierra universal" className="input-field py-2 text-sm" />
+            </LabeledInput>
+            <LabeledInput label="🌿 Cuidado">
+              <input type="text" value={newProd.cuidado} onChange={e => setNew('cuidado', e.target.value)} placeholder="Ej: Luz indirecta" className="input-field py-2 text-sm" />
             </LabeledInput>
           </div>
           <div className="mb-4 sm:mb-5">
@@ -276,14 +300,12 @@ export default function Inventory() {
             <button
               type="button"
               onClick={() => setNew('featured', !newProd.featured)}
-              className={clsx(
-                'relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0',
-                newProd.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
-              )}>
-              <span className={clsx(
-                'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200',
-                newProd.featured ? 'translate-x-5' : 'translate-x-0'
-              )} />
+              style={{ background: newProd.featured ? '#386a2b' : '#c2dab8' }}
+              className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0">
+              <span
+                style={{ transform: newProd.featured ? 'translateX(20px)' : 'translateX(0)' }}
+                className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+              />
             </button>
             <span
               className="text-xs text-botanica-500 dark:text-botanica-400 font-medium cursor-pointer select-none"
@@ -340,6 +362,14 @@ export default function Inventory() {
                     <LabeledInput label="P. Minorista"><EditField field="priceRetail" type="number" /></LabeledInput>
                     <LabeledInput label="P. Mayorista"><EditField field="priceWholesale" type="number" /></LabeledInput>
                     <LabeledInput label="Mín. may."><EditField field="minWholesaleQty" type="number" /></LabeledInput>
+                    <div className="col-span-2">
+                      <LabeledInput label="Descripción">
+                        <EditField field="description" />
+                      </LabeledInput>
+                    </div>
+                    <LabeledInput label="💧 Riego"><EditField field="riego" /></LabeledInput>
+                    <LabeledInput label="🪨 Sustrato"><EditField field="sustrato" /></LabeledInput>
+                    <LabeledInput label="🌿 Cuidado"><EditField field="cuidado" /></LabeledInput>
                   </div>
                   <div>
                     <p className="text-[10px] text-botanica-400 mb-1">Imágenes</p>
@@ -349,14 +379,12 @@ export default function Inventory() {
                     <button
                       type="button"
                       onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
-                      className={clsx(
-                        'relative w-9 h-4 rounded-full transition-colors duration-200 shrink-0',
-                        editing?.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
-                      )}>
-                      <span className={clsx(
-                        'absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200',
-                        editing?.featured ? 'translate-x-5' : 'translate-x-0'
-                      )} />
+                      style={{ background: editing?.featured ? '#386a2b' : '#c2dab8' }}
+                      className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0">
+                      <span
+                        style={{ transform: editing?.featured ? 'translateX(20px)' : 'translateX(0)' }}
+                        className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                      />
                     </button>
                     <span className="text-[10px] text-botanica-500 dark:text-botanica-400 cursor-pointer"
                       onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}>
@@ -465,7 +493,7 @@ export default function Inventory() {
                           <div>
                             <span className="font-mono text-soil-600 dark:text-soil-400 font-semibold">{formatPrice(product.priceWholesale)}</span>
                             <div className="text-[10px] text-soil-400 dark:text-soil-500">
-                              {product.priceRetail > 0 ? Math.round((1 - product.priceWholesale / product.priceRetail) * 100) : 0}% desc.
+                              {product.priceRetail > 0 ? Math.round((1 - product.priceWholesale / product.priceRetail) * 100) : 0}% de ganancia
                             </div>
                           </div>
                         )}
@@ -479,14 +507,12 @@ export default function Inventory() {
                       {isEditing ? (
                         <button type="button"
                           onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
-                          className={clsx(
-                            'relative w-9 h-4 rounded-full transition-colors duration-200 focus:outline-none mx-auto block',
-                            editing?.featured ? 'bg-botanica-600' : 'bg-botanica-200 dark:bg-botanica-700'
-                          )}>
-                          <span className={clsx(
-                            'absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200',
-                            editing?.featured ? 'translate-x-5' : 'translate-x-0'
-                          )} />
+                          style={{ background: editing?.featured ? '#386a2b' : '#c2dab8' }}
+                          className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none mx-auto block">
+                          <span
+                            style={{ transform: editing?.featured ? 'translateX(20px)' : 'translateX(0)' }}
+                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                          />
                         </button>
                       ) : (
                         <span className={clsx('text-sm',

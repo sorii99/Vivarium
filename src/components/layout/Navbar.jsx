@@ -5,7 +5,6 @@ import { useTheme } from '@/context/ThemeContext'
 import { useInventoryStore } from '@/context/InventoryContext'
 import { useCart } from '@/context/CartContext'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
-
 export default function Navbar() {
   const { user, isWholesale, isAdmin, isLoggedIn, authLoading, logout } = useAuth()
   const { dark, toggle } = useTheme()
@@ -62,11 +61,6 @@ export default function Navbar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 bg-botanica-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none tabular-nums">
-                    {totalItems > 9 ? '9+' : totalItems}
-                  </span>
-                )}
               </button>
               <button onClick={toggle} className="theme-toggle" aria-label="Cambiar tema">
                 {dark ? (
@@ -147,6 +141,18 @@ export default function Navbar() {
                 <Link to="/admin"
                   className="hidden md:inline badge-retail hover:bg-botanica-200 dark:hover:bg-botanica-700 transition-colors cursor-pointer whitespace-nowrap">
                   Administrar
+                </Link>
+              )}
+              {isAdmin && (
+                <Link to="/clientes"
+                  className="hidden md:inline badge-retail hover:bg-botanica-200 dark:hover:bg-botanica-700 transition-colors cursor-pointer whitespace-nowrap">
+                  Clientes
+                </Link>
+              )}
+              {isAdmin && (
+                <Link to="/ventas"
+                  className="hidden md:inline badge-retail hover:bg-botanica-200 dark:hover:bg-botanica-700 transition-colors cursor-pointer whitespace-nowrap">
+                  Ventas
                 </Link>
               )}
               <button
@@ -254,6 +260,18 @@ export default function Navbar() {
                   <Link to="/admin" onClick={close}
                     className="btn-ghost text-sm text-left py-2.5 text-botanica-700 dark:text-botanica-300">
                     Administrar
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link to="/clientes" onClick={close}
+                    className="btn-ghost text-sm text-left py-2.5 text-botanica-700 dark:text-botanica-300">
+                    Clientes
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link to="/ventas" onClick={close}
+                    className="btn-ghost text-sm text-left py-2.5 text-botanica-700 dark:text-botanica-300">
+                    Ventas
                   </Link>
                 )}
                 {isAdmin && (

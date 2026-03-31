@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import {
   isSupabaseEnabled,
-  dbLoadAll, dbInsert, dbUpdate, dbDelete, dbDeleteAll,
+  dbLoadAll, dbInsert, dbUpdate, dbDelete, dbDeleteAll, uploadImage,
 } from '@/services/supabase'
 
 const InventoryContext = createContext(null)
@@ -75,6 +75,21 @@ export function fileToDataUrl(file) {
   })
 }
 
+async function uploadBase64Images(images) {
+  if (!isSupabaseEnabled) return images
+  return Promise.all(images.map(async (img) => {
+    if (!img.startsWith('data:')) return img
+    try {
+      const res = await fetch(img)
+      const blob = await res.blob()
+      const ext = blob.type.split('/')[1] || 'jpg'
+      const file = new File([blob], `upload.${ext}`, { type: blob.type })
+      const url = await uploadImage(file)
+      return url || img
+    } catch { return img }
+  }))
+}
+
 export function InventoryProvider({ children }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -106,7 +121,7 @@ export function InventoryProvider({ children }) {
 
   const addProduct = useCallback(async (product) => {
     const id = String(Date.now())
-    const newProduct = {
+    let newProduct = {
       id, slug: id,
       name: product.name || '',
       category: product.category || 'interior',
@@ -124,9 +139,15 @@ export function InventoryProvider({ children }) {
       featured: product.featured || false,
     }
 
+    let finalImages = newProduct.images || []
+    if (syncMode === 'supabase' && finalImages.some(img => img.startsWith('data:'))) {
+      finalImages = await uploadBase64Images(finalImages)
+      newProduct = { ...newProduct, images: finalImages }
+    }
+
     setProducts(prev => [...prev, newProduct])
 
-    const b64 = (newProduct.images || []).filter(img => img.startsWith('data:'))
+    const b64 = finalImages.filter(img => img.startsWith('data:'))
     if (b64.length > 0) imgCacheSet(id, b64)
 
     if (syncMode === 'supabase') {
@@ -136,7 +157,12 @@ export function InventoryProvider({ children }) {
     return id
   }, [syncMode])
 
-  const updateProduct = useCallback(async (id, changes) => {
+  const updateProduct = useCallback(async (id, changes_) => {
+    let changes = { ...changes_ }
+    if (changes.images && syncMode === 'supabase' && changes.images.some(img => img.startsWith('data:'))) {
+      changes = { ...changes, images: await uploadBase64Images(changes.images) }
+    }
+
     setProducts(prev => prev.map(p =>
       p.id === id ? {
         ...p, ...changes,

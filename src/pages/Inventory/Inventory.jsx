@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore, fileToDataUrl } from '@/context/InventoryContext'
+import { uploadImage, isSupabaseEnabled } from '@/services/supabase'
 import { useInventory } from '@/hooks/useProducts'
 import { formatPrice } from '@/utils/format'
 import { CATEGORIES, CATEGORY_OPTIONS } from '@/services/productService'
@@ -21,6 +22,7 @@ function LabeledInput({ label, children }) {
 function ImageUploader({ images, onChange }) {
   const fileRef = useRef()
   const [urlInput, setUrlInput] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   const addUrl = () => {
     const url = urlInput.trim()
@@ -31,9 +33,23 @@ function ImageUploader({ images, onChange }) {
 
   const addFile = async (e) => {
     const files = Array.from(e.target.files)
-    const dataUrls = await Promise.all(files.map(fileToDataUrl))
-    onChange([...images, ...dataUrls])
-    e.target.value = ''
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const results = await Promise.all(files.map(async (file) => {
+        if (isSupabaseEnabled) {
+          const url = await uploadImage(file)
+          if (url) return url
+          console.warn('Storage upload failed, falling back to base64 for:', file.name)
+        }
+        return fileToDataUrl(file)
+      }))
+      const valid = results.filter(Boolean)
+      if (valid.length) onChange([...images, ...valid])
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   return (
@@ -59,18 +75,31 @@ function ImageUploader({ images, onChange }) {
       <div className="flex gap-2">
         <input type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrl())}
-          placeholder="https://... (URL de imagen)"
+          placeholder="https://... (URL de la imagen)"
           className="input-field py-1.5 text-xs flex-1" />
         <button type="button" onClick={addUrl} className="btn-outline text-xs px-2 sm:px-3 py-1.5 shrink-0">
-          + URL
+          + Añadir
         </button>
       </div>
-      <button type="button" onClick={() => fileRef.current.click()}
-        className="w-full border-2 border-dashed border-botanica-200 dark:border-botanica-700 rounded-xl py-2.5 sm:py-3 text-xs text-botanica-500 dark:text-botanica-400 hover:border-botanica-400 transition-colors flex items-center justify-center gap-2">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-        </svg>
-        Subir desde dispositivo
+      <button type="button" onClick={() => !uploading && fileRef.current.click()}
+        disabled={uploading}
+        className="w-full border-2 border-dashed border-botanica-200 dark:border-botanica-700 rounded-xl py-2.5 sm:py-3 text-xs text-botanica-500 dark:text-botanica-400 hover:border-botanica-400 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+        {uploading ? (
+          <>
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Subiendo imagen…
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+            </svg>
+            {isSupabaseEnabled ? 'Subir imagen' : 'Subir desde dispositivo'}
+          </>
+        )}
       </button>
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addFile} />
     </div>
@@ -246,12 +275,12 @@ export default function Inventory() {
 
       {adding && (
         <div className="card p-4 sm:p-6 mb-4 sm:mb-6 border-2 border-botanica-400 dark:border-botanica-600">
-          <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4">Nuevo producto</h2>
+          <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4">Datos del producto</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <LabeledInput label="Nombre *">
+            <LabeledInput label="Nombre*">
               <input type="text" value={newProd.name} onChange={e => setNew('name', e.target.value)} placeholder="Ej: Monstera Deliciosa" className="input-field py-2 text-sm" />
             </LabeledInput>
-            <LabeledInput label="Categoría">
+            <LabeledInput label="Categoría*">
               <select value={newProd.category} onChange={e => setNew('category', e.target.value)} className="input-field py-2 text-sm">
                 {CAT_OPTS.filter(o => !o.isParent).map(o => (
                   <option key={o.id} value={o.id}>{o.label}</option>
@@ -263,13 +292,13 @@ export default function Inventory() {
                 {['planta', 'bolsa', 'unidad', 'kg', 'litro'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </LabeledInput>
-            <LabeledInput label="Precio minorista *">
-              <input type="number" value={newProd.priceRetail} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('priceRetail', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-            </LabeledInput>
-            <LabeledInput label="Precio mayorista *">
+            <LabeledInput label="Precio mayorista*">
               <input type="number" value={newProd.priceWholesale} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('priceWholesale', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
-            <LabeledInput label="Mínimo mayorista">
+            <LabeledInput label="Precio minorista*">
+              <input type="number" value={newProd.priceRetail} min={0} onWheel={e => e.target.blur()} onChange={e => setNew('priceRetail', e.target.value)} placeholder="0" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+            </LabeledInput>
+            <LabeledInput label="Mínimo">
               <input type="number" value={newProd.minWholesaleQty} min={1} onWheel={e => e.target.blur()} onChange={e => setNew('minWholesaleQty', e.target.value)} placeholder="1" className="input-field py-2 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
             </LabeledInput>
             <LabeledInput label="Stock inicial">
@@ -310,7 +339,7 @@ export default function Inventory() {
             <span
               className="text-xs text-botanica-500 dark:text-botanica-400 font-medium cursor-pointer select-none"
               onClick={() => setNew('featured', !newProd.featured)}>
-              Mostrar en destacados de la página de inicio
+              Mostrar como destacado
             </span>
           </div>
           <div className="flex gap-2">
@@ -440,8 +469,8 @@ export default function Inventory() {
               <tr className="bg-botanica-50 dark:bg-botanica-800 border-b border-botanica-100 dark:border-botanica-700">
                 <th className="text-left px-5 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400 min-w-[180px]">Producto</th>
                 <th className="text-left px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Categoría</th>
-                <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-retail">Minorista</span></th>
                 <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-wholesale">Mayorista</span></th>
+                <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-retail">Minorista</span></th>
                 <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Mín.</th>
                 <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Dest.</th>
                 <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400 min-w-[110px]">Stock</th>
@@ -483,11 +512,6 @@ export default function Inventory() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {isEditing
-                        ? <EditField field="priceRetail" type="number" className="w-24 ml-auto" />
-                        : <span className="font-mono text-botanica-800 dark:text-botanica-200">{formatPrice(product.priceRetail)}</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {isEditing
                         ? <EditField field="priceWholesale" type="number" className="w-24 ml-auto" />
                         : (
                           <div>
@@ -497,6 +521,11 @@ export default function Inventory() {
                             </div>
                           </div>
                         )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {isEditing
+                        ? <EditField field="priceRetail" type="number" className="w-24 ml-auto" />
+                        : <span className="font-mono text-botanica-800 dark:text-botanica-200">{formatPrice(product.priceRetail)}</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {isEditing

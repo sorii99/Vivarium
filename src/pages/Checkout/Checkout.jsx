@@ -4,7 +4,7 @@ import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import { formatPrice } from '@/utils/format'
 import { supabase } from '@/services/supabase'
-import { getSetting } from '@/services/settings'
+import { getSetting, getSettingRemote } from '@/services/settings'
 
 const MP_ACCESS_TOKEN = import.meta.env.VITE_MP_ACCESS_TOKEN || ''
 const FORM_KEY = 'botanica_checkout_form'
@@ -41,7 +41,13 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false)
   const [reservaLoading, setReservaLoading] = useState(false)
   const [error, setError] = useState('')
-  const [mpEnabled] = useState(() => getSetting('mpEnabled') !== false)
+  const [mpEnabled, setMpEnabled] = useState(() => getSetting('mpEnabled') !== false)
+
+  useEffect(() => {
+    getSettingRemote('mpEnabled').then(val => {
+      if (val !== null) setMpEnabled(val !== false)
+    })
+  }, [])
   const [pickupLocation, setPickupLocation] = useState(PICKUP_LOCATIONS[0].id)
 
   const [form, setForm] = useState(() => {
@@ -305,7 +311,7 @@ export default function Checkout() {
                 </p>
                 <div className="relative flex items-center gap-3">
                   <div className="flex-1 border-t border-botanica-100 dark:border-botanica-800" />
-                  <span className="text-[10px] text-botanica-400 dark:text-botanica-500 whitespace-nowrap">o sin pago online</span>
+                  <span className="text-[10px] text-botanica-400 dark:text-botanica-500 whitespace-nowrap">o tambien puedes</span>
                   <div className="flex-1 border-t border-botanica-100 dark:border-botanica-800" />
                 </div>
               </>

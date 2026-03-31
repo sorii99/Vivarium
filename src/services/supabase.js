@@ -223,3 +223,33 @@ export async function dbDeleteBanner(id) {
   if (error) { console.error('Banner delete error:', error); return false }
   return true
 }
+
+export async function uploadImage(file) {
+  if (!supabase) return null
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    const { data: uploadData, error } = await supabase.storage
+      .from('product-images')
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: file.type || 'image/jpeg',
+      })
+
+    if (error) {
+      console.error('Storage upload error:', error.message, error)
+      return null
+    }
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(uploadData?.path || path)
+
+    return data?.publicUrl || null
+  } catch (e) {
+    console.error('uploadImage exception:', e)
+    return null
+  }
+}

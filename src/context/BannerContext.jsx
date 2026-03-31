@@ -67,6 +67,7 @@ const DEFAULT_BANNERS = [
 
 export function BannerProvider({ children }) {
   const [banners, setBanners] = useState(() => {
+    if (isSupabaseEnabled) return []
     try {
       if (lsIsInitialized()) {
         const saved = lsLoad()

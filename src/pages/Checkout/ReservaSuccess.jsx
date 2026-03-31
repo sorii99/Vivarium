@@ -18,7 +18,7 @@ export default function ReservaSuccess() {
         Alias:
       </p>
       <p className="text-botanica-400 text-xs sm:text-sm mb-8">
-        Podés enviarnos por <a href={waLink} target="_blank" rel="noopener noreferrer" className="hover:text-botanica-200 transition-colors">Whatsapp</a> el comprobante <br />para continuar con la compra.
+        Envianos por <a href={waLink} target="_blank" rel="noopener noreferrer" className="hover:text-botanica-200 transition-colors underline">Whatsapp</a> el comprobante <br />de transferencia para continuar con la compra.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link to="/productos" className="btn-primary">Ver más productos</Link>

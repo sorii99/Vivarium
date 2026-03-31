@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import BannerManager from './BannerManager'
 import { Link } from 'react-router-dom'
-import { getSetting, setSetting } from '@/services/settings'
+import { getSetting, getSettingRemote, setSetting } from '@/services/settings'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore } from '@/context/InventoryContext'
 import { formatPrice } from '@/utils/format'
@@ -66,7 +66,7 @@ function PriceCalculator() {
         })
 
         if (naftaPremium.length === 0) {
-          setFuelError('No se encontraron datos de Nafta premium')
+          setFuelError('No se encontraron datos')
           return
         }
 
@@ -249,7 +249,7 @@ function PriceCalculator() {
                 <span>{formatPrice(base)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Envío ({kms || '?'}km)</span>
+                <span>Envío ({kms || '?'} km)</span>
                 <span>{formatPrice(logisticRetail)}</span>
               </div>
               <div className="flex justify-between">
@@ -303,14 +303,21 @@ function PriceCalculator() {
   )
 }
 
-
 function AppSettings() {
-  const [mpEnabled, setMpEnabled] = useState(() => getSetting('mpEnabled'))
+  const [mpEnabled, setMpEnabled] = useState(() => getSetting('mpEnabled') !== false)
+  const [settingLoading, setSettingLoading] = useState(true)
 
-  const toggle = () => {
+  useEffect(() => {
+    getSettingRemote('mpEnabled').then(val => {
+      if (val !== null) setMpEnabled(val !== false)
+      setSettingLoading(false)
+    })
+  }, [])
+
+  const toggle = async () => {
     const next = !mpEnabled
     setMpEnabled(next)
-    setSetting('mpEnabled', next)
+    await setSetting('mpEnabled', next)
   }
 
   return (
@@ -325,7 +332,7 @@ function AppSettings() {
               Pago con Mercado Pago
             </p>
             <p className="text-xs text-botanica-500 dark:text-botanica-400 mt-0.5">
-              {mpEnabled
+              {settingLoading ? 'Cargando configuración…' : mpEnabled
                 ? 'El botón de Mercado Pago se muestra como opción de pago.'
                 : 'El botón de Mercado Pago está oculto, no sera mostrado como opción de pago.'}
             </p>

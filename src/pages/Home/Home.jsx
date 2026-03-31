@@ -9,7 +9,7 @@ export default function Home() {
   const { data: featured, isLoading } = useFeaturedProducts()
   const { stats } = useInventoryStore()
 
-  const { banners } = useBanners()
+  const { banners, ready } = useBanners()
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -35,7 +35,7 @@ export default function Home() {
 
   return (
     <div>
-      {banners.length > 0 && banner && (
+      {ready && banners.length > 0 && banner && (
         <div
           className="bg-botanica-900 dark:bg-botanica-950 pb-3 sm:pb-4"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #4a8539 0%, transparent 60%), radial-gradient(circle at 80% 20%, #386a2b 0%, transparent 50%)' }}

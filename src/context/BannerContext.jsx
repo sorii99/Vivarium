@@ -77,7 +77,7 @@ export function BannerProvider({ children }) {
     return DEFAULT_BANNERS
   })
 
-  const [ready, setReady] = useState(false)
+  const [ready, setReady] = useState(!isSupabaseEnabled)
   const [syncMode, setSyncMode] = useState('local')
 
   useEffect(() => {

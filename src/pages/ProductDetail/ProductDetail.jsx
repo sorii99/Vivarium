@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useProduct } from '@/hooks/useProducts'
 import { useAuth } from '@/context/AuthContext'
 import { useCart } from '@/context/CartContext'
-import { formatPrice } from '@/utils/format'
+import { formatPrice, CATEGORY_LABELS } from '@/utils/format'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -58,7 +58,7 @@ export default function ProductDetail() {
         </div>
 
         <div>
-          <span className="badge-retail mb-2 sm:mb-3 inline-block">{product.category}</span>
+          <span className="badge-retail mb-2 sm:mb-3 inline-block">{CATEGORY_LABELS[product.category] || product.category}</span>
 
           <h1 className="font-display text-2xl sm:text-3xl md:text-4xl text-botanica-900 dark:text-botanica-50 mb-2 sm:mb-3 leading-tight">
             {product.name}
@@ -91,13 +91,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
-            Stock:{' '}
-            <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
-              {product.stock} {product.unit}s disponibles
-            </span>
-          </p>
-
           {product.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
               {product.tags.map(tag => (
@@ -109,6 +102,13 @@ export default function ProductDetail() {
               ))}
             </div>
           )}
+
+          <p className="text-xs sm:text-sm text-botanica-500 dark:text-botanica-400 font-mono mb-4 sm:mb-6">
+            Stock:{' '}
+            <span className={product.stock <= 5 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-botanica-700 dark:text-botanica-300'}>
+              {product.stock} disponibles
+            </span>
+          </p>
 
           <div className="flex flex-col gap-3">
             <div className="font-mono font-semibold text-botanica-800 dark:text-botanica-200 text-2xl sm:text-3xl">

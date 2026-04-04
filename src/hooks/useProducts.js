@@ -3,8 +3,15 @@ import { useMemo } from 'react'
 
 function matchesCategory(product, category) {
   if (!category || category === 'all') return true
-  if (category === 'macetas') return product.category?.startsWith('macetas')
-  return product.category === category
+  const pc = product.category || ''
+  if (category === 'macetas') return pc.startsWith('macetas')
+  if (category === 'interior') return pc.startsWith('interior')
+  if (category === 'exterior') return pc.startsWith('exterior')
+  if (category.includes('-')) {
+    const parent = category.split('-')[0]
+    return pc === category || pc === parent
+  }
+  return pc === category
 }
 
 export function useProducts({ category = 'all', search = '' } = {}) {
@@ -41,10 +48,7 @@ export function useProduct(id) {
 
 export function useFeaturedProducts() {
   const { products } = useInventoryStore()
-  const featured = useMemo(() => {
-    const marked = products.filter(p => p.featured)
-    return marked.length > 0 ? marked : products
-  }, [products])
+  const featured = useMemo(() => products.filter(p => p.featured), [products])
   return { data: featured, isLoading: false }
 }
 

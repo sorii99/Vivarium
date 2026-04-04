@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { CartProvider } from '@/context/CartContext'
 import Checkout from '@/pages/Checkout/Checkout'
 import CheckoutSuccess from '@/pages/Checkout/CheckoutSuccess'
@@ -19,37 +20,44 @@ import Clientes from '@/pages/Clientes/Clientes'
 import Ventas from '@/pages/Ventas/Ventas'
 import NotFound from '@/pages/NotFound'
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <ScrollToTop />
         <BannerProvider>
-          <InventoryProvider>
-            <CartProvider>
-              <Routes>
-                <Route element={<Layout />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/productos" element={<Catalog />} />
-                  <Route path="/productos/:id" element={<ProductDetail />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/checkout/success" element={<CheckoutSuccess />} />
-                  <Route path="/checkout/reserva-success" element={<ReservaSuccess />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-                <Route path="/inventario" element={<RequireAdmin><Layout /></RequireAdmin>}>
-                  <Route index element={<Inventory />} />
-                </Route>
-                <Route path="/clientes" element={<RequireAdmin><Layout /></RequireAdmin>}>
-                  <Route index element={<Clientes />} />
-                </Route>
-                <Route path="/ventas" element={<RequireAdmin><Layout /></RequireAdmin>}>
-                  <Route index element={<Ventas />} />
-                </Route>
-              </Routes>
-            </CartProvider>
-          </InventoryProvider>
+        <InventoryProvider>
+        <CartProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/productos" element={<Catalog />} />
+              <Route path="/productos/:id" element={<ProductDetail />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout/success" element={<CheckoutSuccess />} />
+              <Route path="/checkout/reserva-success" element={<ReservaSuccess />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+            <Route path="/inventario" element={<RequireAdmin><Layout /></RequireAdmin>}>
+              <Route index element={<Inventory />} />
+            </Route>
+            <Route path="/clientes" element={<RequireAdmin><Layout /></RequireAdmin>}>
+              <Route index element={<Clientes />} />
+            </Route>
+            <Route path="/ventas" element={<RequireAdmin><Layout /></RequireAdmin>}>
+              <Route index element={<Ventas />} />
+            </Route>
+          </Routes>
+        </CartProvider>
+        </InventoryProvider>
         </BannerProvider>
       </AuthProvider>
     </ThemeProvider>

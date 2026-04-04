@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useCart } from '@/context/CartContext'
-import { formatPrice, CATEGORY_ICONS } from '@/utils/format'
+import { formatPrice, CATEGORY_ICONS, CATEGORY_LABELS } from '@/utils/format'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
 
 export default function ProductCard({ product, compact = false }) {
@@ -10,7 +10,7 @@ export default function ProductCard({ product, compact = false }) {
   const price = isWholesale ? product.priceWholesale : product.priceRetail
 
   return (
-    <div className="card group block overflow-hidden relative">
+    <div className="card group flex flex-col overflow-hidden relative">
       <Link to={`/productos/${product.id}`}>
         <div className={clsx(
           'relative overflow-hidden bg-botanica-100 dark:bg-botanica-800',
@@ -30,12 +30,12 @@ export default function ProductCard({ product, compact = false }) {
           )}
 
           <span className="absolute top-2 left-2 bg-white/80 dark:bg-botanica-900/80 backdrop-blur-sm text-botanica-700 dark:text-botanica-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-            {CATEGORY_ICONS[product.category]} {product.category}
+            {CATEGORY_ICONS[product.category]} {CATEGORY_LABELS[product.category] || product.category}
           </span>
 
           {product.stock > 0 && product.stock <= 5 && (
             <span className="absolute top-2 right-2 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-              Últimas {product.stock}
+              Últimas {product.stock} unidades
             </span>
           )}
           {product.stock === 0 && (
@@ -46,33 +46,23 @@ export default function ProductCard({ product, compact = false }) {
         </div>
       </Link>
 
-      <div className="p-3 sm:p-4">
-        <h3 className="font-display text-botanica-900 dark:text-botanica-100 font-semibold text-sm sm:text-lg leading-tight mb-1 line-clamp-2">
+      <div className="p-3 sm:p-4 flex flex-col flex-1">
+        <h3 className="font-display text-botanica-900 dark:text-botanica-100 font-semibold text-base sm:text-lg leading-tight mb-1 line-clamp-2">
           {product.name}
         </h3>
 
         {!compact && (
-          <>
-            {product.description && (
-              <p className="text-botanica-600 dark:text-botanica-400 text-xs sm:text-sm line-clamp-2 mb-1.5 sm:mb-2 font-body hidden sm:block">
-                {product.description}
-              </p>
-            )}
-
-          </>
+          <p className="flex-1 text-botanica-600 dark:text-botanica-400 text-xs line-clamp-2 font-body hidden sm:block">
+            {product.description || ''}
+          </p>
         )}
 
-        <div className="flex items-end justify-between gap-1 mt-1 sm:mt-2">
+        <div className="flex items-end justify-between gap-1 mt-auto pt-2">
           <div>
             <Link to={`/productos/${product.id}`} className="block">
               <div className="font-mono font-semibold text-botanica-800 dark:text-botanica-200 text-sm sm:text-lg">
                 {formatPrice(price)}
               </div>
-              {isWholesale && (
-                <div className="text-[10px] sm:text-xs text-soil-500 dark:text-soil-400 font-mono">
-                  may. · mín. {product.minWholesaleQty}
-                </div>
-              )}
             </Link>
           </div>
           <button

@@ -14,7 +14,7 @@ function PackagingRow({ item, onChange, onRemove }) {
         type="text"
         value={item.label}
         onChange={e => onChange({ ...item, label: e.target.value })}
-        placeholder="Ej: Caja, Bolsa, Cinta…"
+        placeholder="Caja, Bolsa, Cinta…"
         className="input-field py-1.5 text-xs flex-1"
       />
       <span className="text-botanica-400 text-xs shrink-0">$</span>
@@ -197,7 +197,7 @@ function PriceCalculator() {
             {(logisticRetail > 0 || logisticWholesale > 0) && (
               <div className="mt-2 flex gap-4 text-[10px] font-mono text-botanica-500 dark:text-botanica-400">
                 <span>Minorista ({kms}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticRetail)}</span></span>
-                <span>Mayorista (×{WHOLESALE_MULT}): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
+                <span>Mayorista (×{WHOLESALE_MULT}km): <span className="text-botanica-700 dark:text-botanica-300">{formatPrice(logisticWholesale)}</span></span>
               </div>
             )}
           </div>
@@ -210,7 +210,7 @@ function PriceCalculator() {
               <button
                 onClick={addPackaging}
                 className="text-[10px] btn-ghost py-1 px-2 text-botanica-500">
-                + Agregar ítem
+                + Agregar
               </button>
             </div>
             <div className="space-y-2">
@@ -249,7 +249,7 @@ function PriceCalculator() {
                 <span>{formatPrice(base)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Envío ({kms || '?'} km)</span>
+                <span>Envío ({kms || '?'}km)</span>
                 <span>{formatPrice(logisticRetail)}</span>
               </div>
               <div className="flex justify-between">
@@ -329,7 +329,7 @@ function AppSettings() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-botanica-800 dark:text-botanica-200">
-              Pago con Mercado Pago
+              Mercado Pago
             </p>
             <p className="text-xs text-botanica-500 dark:text-botanica-400 mt-0.5">
               {settingLoading ? 'Cargando configuración…' : mpEnabled
@@ -507,7 +507,7 @@ export default function AdminDashboard() {
                 { label: 'Fertilizantes', icon: '🌿', cat: 'fertilizantes' },
                 { label: 'Macetas', icon: '🏺', cat: 'macetas' },
               ].map(({ label, icon, cat }) => {
-                const cp = products.filter(p => cat === 'macetas' ? p.category?.startsWith('macetas') : p.category === cat)
+                const cp = products.filter(p => (['macetas', 'interior', 'exterior'].includes(cat) ? p.category?.startsWith(cat) : p.category === cat))
                 const val = cp.reduce((s, p) => s + p.priceRetail * p.stock, 0)
                 return (
                   <div key={cat} className="flex items-center justify-between py-2 sm:py-2.5 border-b border-botanica-50 dark:border-botanica-800 last:border-0">

@@ -53,8 +53,14 @@ export default function Home() {
                 className="relative"
                 style={{ opacity: leaving ? 0 : 1, transform: leaving ? 'translateY(4px)' : 'translateY(0)', transition: 'opacity 0.25s ease, transform 0.25s ease' }}
               >
-                <div className="flex items-stretch">
-                  <div className="flex-1 min-w-0 px-5 sm:px-8 py-5 sm:py-6 flex flex-col justify-center">
+                <div className="relative flex items-stretch min-h-[120px] sm:min-h-[140px]">
+                  {banner.image && (
+                    <div className="absolute inset-0 sm:hidden overflow-hidden rounded-b-2xl">
+                      <img src={banner.image} alt="" className="w-full h-full object-cover object-center opacity-30" />
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #0f1f0d 55%, transparent)' }} />
+                    </div>
+                  )}
+                  <div className="relative flex-1 min-w-0 px-4 sm:px-8 py-5 sm:py-7 flex flex-col justify-center">
                     {banner.tag && (
                       <span className="inline-block self-start text-[10px] sm:text-xs font-body px-2.5 py-0.5 rounded-full mb-2"
                         style={{ background: `${banner.accent}20`, color: banner.accent, border: `1px solid ${banner.accent}40` }}>
@@ -71,7 +77,7 @@ export default function Home() {
                       </p>
                     )}
                     {banner.desc && (
-                      <p className="font-body text-botanica-600 dark:text-botanica-400 text-xs sm:text-sm max-w-sm leading-relaxed mb-3 sm:mb-4 hidden sm:block">
+                      <p className="font-body text-botanica-600 dark:text-botanica-400 text-xs sm:text-sm max-w-sm leading-relaxed mb-3 sm:mb-4">
                         {banner.desc}
                       </p>
                     )}
@@ -86,13 +92,13 @@ export default function Home() {
                   </div>
 
                   {banner.image && (
-                    <div className="hidden sm:block w-40 md:w-56 shrink-0 relative overflow-hidden">
+                    <div className="hidden sm:block w-[35%] shrink-0 relative overflow-hidden">
                       <img
                         src={banner.image}
                         alt={banner.title}
                         className="absolute inset-0 w-full h-full object-cover object-center"
                       />
-                      <div className="absolute inset-y-0 left-0 w-12 pointer-events-none"
+                      <div className="absolute inset-y-0 left-0 w-16 pointer-events-none"
                         style={{ background: 'linear-gradient(to right, #0f1f0d, transparent)' }} />
                     </div>
                   )}
@@ -166,7 +172,7 @@ export default function Home() {
             </p>
             <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Más buscados</h2>
           </div>
-          <Link to="/productos" className="btn-ghost text-xs sm:text-sm shrink-0">Ver todos →</Link>
+          <Link to="/productos" className="btn-ghost text-xs sm:text-sm shrink-0">Ver más →</Link>
         </div>
 
         {featured?.length === 0 && !isLoading ? (

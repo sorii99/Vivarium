@@ -207,8 +207,9 @@ export function InventoryProvider({ children }) {
 
   const stats = {
     total: products.length,
-    interior: products.filter(p => p.category === 'interior').length,
-    exterior: products.filter(p => p.category === 'exterior').length,
+    interior: products.filter(p => p.category?.startsWith('interior')).length,
+    exterior: products.filter(p => p.category?.startsWith('exterior')).length,
+    kits: products.filter(p => p.category === 'kits').length,
     insumos: products.filter(p => p.category === 'insumos').length,
     quimicos: products.filter(p => p.category === 'quimicos').length,
     fertilizantes: products.filter(p => p.category === 'fertilizantes').length,

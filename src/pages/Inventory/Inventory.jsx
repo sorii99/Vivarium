@@ -1,14 +1,13 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, memo } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useInventoryStore, fileToDataUrl } from '@/context/InventoryContext'
 import { uploadImage, isSupabaseEnabled } from '@/services/supabase'
 import { useInventory } from '@/hooks/useProducts'
-import { formatPrice } from '@/utils/format'
+import { formatPrice, CATEGORY_LABELS } from '@/utils/format'
 import { CATEGORIES, CATEGORY_OPTIONS } from '@/services/productService'
 const clsx = (...c) => c.flat().filter(Boolean).join(' ')
-
 const CAT_OPTS = CATEGORY_OPTIONS
-const EMPTY = { name: '', category: 'interior', description: '', riego: '', sustrato: '', cuidado: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [], featured: false }
+const EMPTY = { name: '', category: 'interior-plantas', description: '', riego: '', sustrato: '', cuidado: '', priceRetail: '', priceWholesale: '', minWholesaleQty: '1', stock: '', unit: 'planta', images: [], featured: false }
 
 function LabeledInput({ label, children }) {
   return (
@@ -16,6 +15,26 @@ function LabeledInput({ label, children }) {
       <label className="block text-xs text-botanica-500 dark:text-botanica-400 mb-1 font-medium">{label}</label>
       {children}
     </div>
+  )
+}
+
+function EditField({ field, type = 'text', as = 'input', opts = [], className = '', value, onChange }) {
+  if (as === 'select') return (
+    <select value={value ?? ''} onChange={e => onChange(field, e.target.value)}
+      className={clsx('input-field py-2 text-sm', className)}>
+      {(opts || []).filter(o => !o.isParent).map(o => (
+        <option key={o.id} value={o.id}>{o.label}</option>
+      ))}
+    </select>
+  )
+  return (
+    <input type={type} value={value ?? ''} onChange={e => onChange(field, e.target.value)}
+      onWheel={type === 'number' ? e => e.target.blur() : undefined}
+      className={clsx('input-field py-2 text-sm',
+        type === 'number' && '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+        className)}
+      min={type === 'number' ? 0 : undefined}
+    />
   )
 }
 
@@ -40,7 +59,7 @@ function ImageUploader({ images, onChange }) {
         if (isSupabaseEnabled) {
           const url = await uploadImage(file)
           if (url) return url
-          console.warn('Storage upload failed, falling back to base64 for:', file.name)
+          console.warn('Error al subir una imagen:', file.name)
         }
         return fileToDataUrl(file)
       }))
@@ -60,14 +79,8 @@ function ImageUploader({ images, onChange }) {
             <div key={i} className="relative group w-14 h-14 sm:w-16 sm:h-16">
               <img src={src} alt="" className="w-full h-full object-cover rounded-lg border border-botanica-200 dark:border-botanica-700" />
               <button type="button" onClick={() => onChange(images.filter((_, j) => j !== i))}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                ×
-              </button>
-              {i === 0 && (
-                <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-botanica-800/70 text-white rounded-b-lg py-0.5">
-                  principal
-                </span>
-              )}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+              {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-botanica-800/70 text-white rounded-b-lg py-0.5">principal</span>}
             </div>
           ))}
         </div>
@@ -75,30 +88,15 @@ function ImageUploader({ images, onChange }) {
       <div className="flex gap-2">
         <input type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrl())}
-          placeholder="https://... (URL de la imagen)"
-          className="input-field py-1.5 text-xs flex-1" />
-        <button type="button" onClick={addUrl} className="btn-outline text-xs px-2 sm:px-3 py-1.5 shrink-0">
-          + Añadir
-        </button>
+          placeholder="https://... (URL de la imagen)" className="input-field py-1.5 text-xs flex-1" />
+        <button type="button" onClick={addUrl} className="btn-outline text-xs px-2 sm:px-3 py-1.5 shrink-0">+ Añadir</button>
       </div>
-      <button type="button" onClick={() => !uploading && fileRef.current.click()}
-        disabled={uploading}
-        className="w-full border-2 border-dashed border-botanica-200 dark:border-botanica-700 rounded-xl py-2.5 sm:py-3 text-xs text-botanica-500 dark:text-botanica-400 hover:border-botanica-400 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+      <button type="button" onClick={() => !uploading && fileRef.current.click()} disabled={uploading}
+        className="w-full border-2 border-dashed border-botanica-200 dark:border-botanica-700 rounded-xl py-2.5 text-xs text-botanica-500 dark:text-botanica-400 hover:border-botanica-400 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
         {uploading ? (
-          <>
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Subiendo imagen…
-          </>
+          <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Subiendo…</>
         ) : (
-          <>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-            </svg>
-            {isSupabaseEnabled ? 'Subir imagen' : 'Subir desde dispositivo'}
-          </>
+          <>{isSupabaseEnabled ? 'Subir a la nube' : 'Subir desde dispositivo'}</>
         )}
       </button>
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addFile} />
@@ -111,27 +109,104 @@ function StockControl({ productId, stock }) {
   return (
     <div className="flex items-center gap-1">
       <button onClick={() => adjustStock(productId, -1)} disabled={stock === 0}
-        className="w-6 h-6 rounded-full border border-botanica-200 dark:border-botanica-700 flex items-center justify-center text-botanica-600 dark:text-botanica-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs">
-        −
-      </button>
+        className="w-6 h-6 rounded-full border border-botanica-200 dark:border-botanica-700 flex items-center justify-center text-botanica-600 dark:text-botanica-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 transition-colors text-xs">−</button>
       <span className={clsx('font-mono text-sm font-semibold w-7 text-center',
         stock === 0 ? 'text-red-500 dark:text-red-400' :
           stock <= 5 ? 'text-amber-600 dark:text-amber-400' :
-            'text-botanica-700 dark:text-botanica-300')}>
-        {stock}
-      </span>
+            'text-botanica-700 dark:text-botanica-300')}>{stock}</span>
       <button onClick={() => adjustStock(productId, +1)}
-        className="w-6 h-6 rounded-full border border-botanica-200 dark:border-botanica-700 flex items-center justify-center text-botanica-600 dark:text-botanica-400 hover:bg-botanica-50 dark:hover:bg-botanica-700 transition-colors text-xs">
-        +
-      </button>
+        className="w-6 h-6 rounded-full border border-botanica-200 dark:border-botanica-700 flex items-center justify-center text-botanica-600 dark:text-botanica-400 hover:bg-botanica-50 dark:hover:bg-botanica-700 transition-colors text-xs">+</button>
     </div>
   )
 }
 
+const EditForm = memo(function EditForm({ editing, onChange, onImages, onFeatured, onSave, onCancel }) {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2">
+          <LabeledInput label="Nombre">
+            <EditField field="name" value={editing.name ?? ''} onChange={onChange} />
+          </LabeledInput>
+        </div>
+        <LabeledInput label="Categoría">
+          <EditField field="category" value={editing.category ?? ''} as="select" opts={CAT_OPTS} onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="Stock">
+          <EditField field="stock" value={editing.stock ?? ''} type="number" onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="P. Minorista">
+          <EditField field="priceRetail" value={editing.priceRetail ?? ''} type="number" onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="P. Mayorista">
+          <EditField field="priceWholesale" value={editing.priceWholesale ?? ''} type="number" onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="Mín. may.">
+          <EditField field="minWholesaleQty" value={editing.minWholesaleQty ?? ''} type="number" onChange={onChange} />
+        </LabeledInput>
+        <div className="col-span-2">
+          <LabeledInput label="Descripción">
+            <EditField field="description" value={editing.description ?? ''} onChange={onChange} />
+          </LabeledInput>
+        </div>
+        <LabeledInput label="💧 Riego">
+          <EditField field="riego" value={editing.riego ?? ''} onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="🪨 Sustrato">
+          <EditField field="sustrato" value={editing.sustrato ?? ''} onChange={onChange} />
+        </LabeledInput>
+        <LabeledInput label="🌿 Cuidado">
+          <EditField field="cuidado" value={editing.cuidado ?? ''} onChange={onChange} />
+        </LabeledInput>
+      </div>
+      <div>
+        <p className="text-[10px] text-botanica-400 mb-1">Imágenes</p>
+        <ImageUploader images={editing.images || []} onChange={onImages} />
+      </div>
+      <div className="flex items-center gap-3 mb-2">
+        <button type="button" onClick={onFeatured}
+          style={{ background: editing.featured ? '#386a2b' : '#c2dab8' }}
+          className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0">
+          <span style={{ transform: editing.featured ? 'translateX(20px)' : 'translateX(0)' }}
+            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" />
+        </button>
+        <span className="text-[10px] text-botanica-500 dark:text-botanica-400 cursor-pointer" onClick={onFeatured}>Destacado</span>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button onClick={onSave} className="btn-primary text-xs flex-1">Guardar</button>
+        <button onClick={onCancel} className="btn-ghost text-xs">✕</button>
+      </div>
+    </div>
+  )
+})
+
+const TableEditForm = memo(function TableEditForm({ editing, onChange, onImages }) {
+  return (
+    <div className="space-y-2">
+      <EditField field="name" value={editing.name ?? ''} className="w-full" onChange={onChange} />
+      <EditField field="description" value={editing.description ?? ''} className="w-full" onChange={onChange} />
+      <div className="grid grid-cols-3 gap-1">
+        <div>
+          <p className="text-[9px] text-botanica-400 mb-0.5">💧 Riego</p>
+          <EditField field="riego" value={editing.riego ?? ''} className="w-full" onChange={onChange} />
+        </div>
+        <div>
+          <p className="text-[9px] text-botanica-400 mb-0.5">🪨 Sustrato</p>
+          <EditField field="sustrato" value={editing.sustrato ?? ''} className="w-full" onChange={onChange} />
+        </div>
+        <div>
+          <p className="text-[9px] text-botanica-400 mb-0.5">🌿 Cuidado</p>
+          <EditField field="cuidado" value={editing.cuidado ?? ''} className="w-full" onChange={onChange} />
+        </div>
+      </div>
+      <ImageUploader images={editing.images || []} onChange={onImages} />
+    </div>
+  )
+})
+
 export default function Inventory() {
   const { isAdmin } = useAuth()
   const { updateProduct, deleteProduct, addProduct } = useInventoryStore()
-
   const [category, setCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null)
@@ -146,99 +221,73 @@ export default function Inventory() {
 
   const startEdit = (p) => { setEditing({ ...p }); setAdding(false) }
   const cancelEdit = () => setEditing(null)
-  const saveEdit = () => {
-    updateProduct(editing.id, editing)
+  const saveEdit = async () => {
+    await updateProduct(editing.id, editing)
     setSaved(editing.id)
-    setTimeout(() => setSaved(null), 1800)
+    setTimeout(() => setSaved(null), 2000)
     setEditing(null)
   }
 
   const setNew = useCallback((field, value) => setNewProd(prev => ({ ...prev, [field]: value })), [])
-  const saveNew = () => { addProduct(newProd); setNewProd({ ...EMPTY }); setAdding(false) }
+
+  const onEditChange = useCallback((f, v) => setEditing(prev => prev ? { ...prev, [f]: v } : prev), [])
+  const onEditImages = useCallback((imgs) => setEditing(prev => prev ? { ...prev, images: imgs } : prev), [])
+  const onEditFeatured = useCallback(() => setEditing(prev => prev ? { ...prev, featured: !prev.featured } : prev), [])
+
   const cancelAdd = () => { setAdding(false); setNewProd({ ...EMPTY }) }
 
-  const VALID_CATS = new Set(['interior', 'exterior', 'insumos', 'quimicos', 'fertilizantes', 'macetas', 'macetas-plastico', 'macetas-ceramica', 'macetas-terracota', 'macetas-madera', 'macetas-colgante'])
-
-  const parseCSV = (text) => {
-    const lines = text.trim().split(/\r?\n/)
-    if (lines.length < 2) return { rows: [], errors: ['El archivo está vacío'] }
-    const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase())
-    const colMap = {
-      nombre: 'name', name: 'name',
-      'categoría': 'category', categoria: 'category', category: 'category',
-      'p. minorista': 'priceRetail', minorista: 'priceRetail', priceretail: 'priceRetail',
-      'p. mayorista': 'priceWholesale', mayorista: 'priceWholesale', pricewholesale: 'priceWholesale',
-      'mín. may.': 'minWholesaleQty', minwholesaleqty: 'minWholesaleQty',
-      stock: 'stock', unidad: 'unit', unit: 'unit',
-      descripcion: 'description', description: 'description', 'descripción': 'description',
-      imagen: 'image', image: 'image', id: 'id',
-    }
-    const mapped = header.map(h => colMap[h] || null)
-    const errors = [], rows = []
-    lines.slice(1).forEach((line, i) => {
-      if (!line.trim()) return
-      const cols = []; let cur = '', inQ = false
-      for (const ch of line) {
-        if (ch === '"') { inQ = !inQ }
-        else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = '' }
-        else cur += ch
-      }
-      cols.push(cur.trim())
-      const row = {}
-      mapped.forEach((key, j) => { if (key) row[key] = cols[j]?.replace(/^"|"$/g, '') ?? '' })
-      if (!row.name) { errors.push(`Fila ${i + 2}: nombre vacío`); return }
-      if (row.category && !VALID_CATS.has(row.category.toLowerCase())) {
-        errors.push(`Fila ${i + 2}: categoría inválida → "interior"`); row.category = 'interior'
-      }
-      rows.push({ id: row.id || String(Date.now() + i), name: row.name, category: (row.category || 'interior').toLowerCase(), description: row.description || '', priceRetail: Number(row.priceRetail) || 0, priceWholesale: Number(row.priceWholesale) || 0, minWholesaleQty: Number(row.minWholesaleQty) || 1, stock: Number(row.stock) || 0, unit: row.unit || 'planta', images: row.image ? [row.image] : [], tags: [], featured: false, slug: row.id || String(Date.now() + i) })
-    })
-    return { rows, errors }
-  }
-
-  const handleCSVFile = (e) => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => setCsvPreview(parseCSV(ev.target.result))
-    reader.readAsText(file, 'UTF-8'); e.target.value = ''
-  }
-
-  const confirmImport = () => {
-    if (!csvPreview) return
-    csvPreview.rows.forEach(row => {
-      const existing = products.find(p => p.id === row.id || p.name.toLowerCase() === row.name.toLowerCase())
-      if (existing && csvMode === 'merge') updateProduct(existing.id, { ...row, id: existing.id })
-      else if (!existing) addProduct(row)
-    })
-    setCsvPreview(null)
+  const handleAdd = async () => {
+    if (!newProd.name) return
+    await addProduct(newProd)
+    cancelAdd()
   }
 
   const exportCSV = () => {
-    const rows = [['ID', 'Nombre', 'Categoría', 'P. Minorista', 'P. Mayorista', 'Mín. May.', 'Stock', 'Unidad'],
+    const rows = [['id', 'name', 'category', 'priceRetail', 'priceWholesale', 'minWholesaleQty', 'stock', 'unit'],
     ...(products || []).map(p => [p.id, `"${p.name}"`, p.category, p.priceRetail, p.priceWholesale, p.minWholesaleQty, p.stock, p.unit])]
     const a = document.createElement('a')
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'))
     a.download = 'inventario.csv'; a.click()
   }
 
-  const EditField = ({ field, type = 'text', as = 'input', opts = [], className = '' }) => {
-    if (as === 'select') return (
-      <select value={editing[field]} onChange={e => setEditing(v => ({ ...v, [field]: e.target.value }))}
-        className={clsx('input-field py-1 text-xs', className)}>
-        {opts.filter(o => !o.isParent).map(o => (
-          <option key={o.id} value={o.id}>{o.label}</option>
-        ))}
-      </select>
-    )
-    return (
-      <input
-        type={type}
-        value={editing[field] ?? ''}
-        onChange={e => setEditing(v => ({ ...v, [field]: e.target.value }))}
-        onWheel={type === 'number' ? e => e.target.blur() : undefined}
-        className={clsx('input-field py-1 text-xs', type === 'number' && '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none', className)}
-        min={type === 'number' ? 0 : undefined}
-      />
-    )
+  const handleCSV = (e) => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const lines = ev.target.result.split('\n').filter(Boolean)
+      if (lines.length < 2) return
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
+      const colMap = {
+        nombre: 'name', name: 'name', descripcion: 'description', description: 'description', 'descripción': 'description',
+        categoria: 'category', category: 'category', 'precio minorista': 'priceRetail', precioretail: 'priceRetail', priceretail: 'priceRetail',
+        'precio mayorista': 'priceWholesale', preciomayor: 'priceWholesale', pricewholesale: 'priceWholesale',
+        'min mayorista': 'minWholesaleQty', minwholesaleqty: 'minWholesaleQty', stock: 'stock', unidad: 'unit', unit: 'unit'
+      }
+      const VALID_CATS = new Set(['interior', 'interior-plantas', 'interior-combos', 'exterior', 'exterior-plantas', 'exterior-combos', 'exterior-frutales', 'exterior-aromaticas', 'insumos', 'quimicos', 'fertilizantes', 'macetas', 'macetas-plastico', 'macetas-ceramica', 'macetas-terracota', 'macetas-madera', 'macetas-colgante', 'kits'])
+      const errors = []
+      const rows = lines.slice(1).map((line, i) => {
+        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+        const row = {}
+        headers.forEach((h, j) => { const k = colMap[h]; if (k) row[k] = vals[j] })
+        if (!row.name) { errors.push(`Fila ${i + 2}: sin nombre`); return null }
+        if (row.category && !VALID_CATS.has(row.category)) { errors.push(`Fila ${i + 2}: categoría inválida → "interior-plantas"`); row.category = 'interior-plantas' }
+        return {
+          id: row.id || String(Date.now() + i), name: row.name, category: (row.category || 'interior-plantas').toLowerCase(),
+          description: row.description || '', priceRetail: Number(row.priceRetail) || 0, priceWholesale: Number(row.priceWholesale) || 0,
+          minWholesaleQty: Number(row.minWholesaleQty) || 1, stock: Number(row.stock) || 0, unit: row.unit || 'planta',
+          images: [], tags: [], featured: false, slug: row.id || String(Date.now() + i)
+        }
+      }).filter(Boolean)
+      setCsvPreview({ rows, errors, mode: csvMode })
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  const importCSV = async () => {
+    if (!csvPreview) return
+    for (const row of csvPreview.rows) await addProduct(row)
+    setCsvPreview(null)
   }
 
   return (
@@ -262,7 +311,7 @@ export default function Inventory() {
               </svg>
               Importar CSV
             </button>
-            <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCSVFile} />
+            <input ref={csvRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCSV} />
             <button onClick={exportCSV} className="btn-outline text-xs sm:text-sm px-3 sm:px-4 flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -273,23 +322,23 @@ export default function Inventory() {
         )}
       </div>
 
-      {adding && (
-        <div className="card p-4 sm:p-6 mb-4 sm:mb-6 border-2 border-botanica-400 dark:border-botanica-600">
-          <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4">Datos del producto</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <LabeledInput label="Nombre*">
-              <input type="text" value={newProd.name} onChange={e => setNew('name', e.target.value)} placeholder="Ej: Monstera Deliciosa" className="input-field py-2 text-sm" />
-            </LabeledInput>
+      {adding && isAdmin && (
+        <div className="card p-4 sm:p-6 mb-6 border-2 border-botanica-400 dark:border-botanica-600">
+          <h2 className="font-display text-base sm:text-lg text-botanica-800 dark:text-botanica-200 mb-4">Nuevo producto</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+            <div className="col-span-2 sm:col-span-3">
+              <LabeledInput label="Nombre*">
+                <input type="text" value={newProd.name} onChange={e => setNew('name', e.target.value)} placeholder="Datos del producto" className="input-field py-2 text-sm" />
+              </LabeledInput>
+            </div>
             <LabeledInput label="Categoría*">
               <select value={newProd.category} onChange={e => setNew('category', e.target.value)} className="input-field py-2 text-sm">
-                {CAT_OPTS.filter(o => !o.isParent).map(o => (
-                  <option key={o.id} value={o.id}>{o.label}</option>
-                ))}
+                {CAT_OPTS.filter(o => !o.isParent).map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
               </select>
             </LabeledInput>
-            <LabeledInput label="Unidad">
+            <LabeledInput label="Tipo">
               <select value={newProd.unit} onChange={e => setNew('unit', e.target.value)} className="input-field py-2 text-sm">
-                {['planta', 'bolsa', 'unidad', 'kg', 'litro'].map(u => <option key={u} value={u}>{u}</option>)}
+                {['planta', 'unidad', 'kg', 'litro', 'bolsa', 'par'].map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </LabeledInput>
             <LabeledInput label="Precio mayorista*">
@@ -326,27 +375,34 @@ export default function Inventory() {
             <ImageUploader images={newProd.images} onChange={imgs => setNew('images', imgs)} />
           </div>
           <div className="flex items-center gap-3 mb-4">
-            <button
-              type="button"
-              onClick={() => setNew('featured', !newProd.featured)}
+            <button type="button" onClick={() => setNew('featured', !newProd.featured)}
               style={{ background: newProd.featured ? '#386a2b' : '#c2dab8' }}
               className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0">
-              <span
-                style={{ transform: newProd.featured ? 'translateX(20px)' : 'translateX(0)' }}
-                className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
-              />
+              <span style={{ transform: newProd.featured ? 'translateX(20px)' : 'translateX(0)' }}
+                className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" />
             </button>
-            <span
-              className="text-xs text-botanica-500 dark:text-botanica-400 font-medium cursor-pointer select-none"
-              onClick={() => setNew('featured', !newProd.featured)}>
-              Mostrar como destacado
-            </span>
+            <span className="text-xs text-botanica-500 dark:text-botanica-400">Destacado en inicio</span>
           </div>
           <div className="flex gap-2">
-            <button onClick={saveNew} disabled={!newProd.name || !newProd.priceRetail} className="btn-primary text-xs sm:text-sm disabled:opacity-40 disabled:cursor-not-allowed">
-              Guardar
+            <button onClick={handleAdd} disabled={!newProd.name} className="btn-primary text-xs sm:text-sm disabled:opacity-40">
+              Mostrar como destacado
             </button>
             <button onClick={cancelAdd} className="btn-ghost text-xs sm:text-sm">Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {csvPreview && (
+        <div className="card p-4 mb-6 border-2 border-amber-400 dark:border-amber-600">
+          <h3 className="font-display text-sm text-botanica-800 dark:text-botanica-200 mb-2">Vista previa — {csvPreview.rows.length} productos</h3>
+          {csvPreview.errors.length > 0 && (
+            <ul className="text-xs text-amber-600 dark:text-amber-400 mb-3 space-y-0.5">
+              {csvPreview.errors.map((e, i) => <li key={i}>⚠ {e}</li>)}
+            </ul>
+          )}
+          <div className="flex gap-2">
+            <button onClick={importCSV} className="btn-primary text-xs">Importar {csvPreview.rows.length} productos</button>
+            <button onClick={() => setCsvPreview(null)} className="btn-ghost text-xs">Cancelar</button>
           </div>
         </div>
       )}
@@ -358,7 +414,7 @@ export default function Inventory() {
           </svg>
           <input type="text" placeholder="Buscar producto…" value={search} onChange={e => setSearch(e.target.value)} className="input-field pl-9 text-sm" />
         </div>
-        <div className="flex flex-wrap gap-1 bg-botanica-100 dark:bg-botanica-800 rounded-2xl p-1">
+        <div className="flex lg:flex-wrap gap-1 bg-botanica-100 dark:bg-botanica-800 rounded-2xl p-1 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {CATEGORIES.map(({ id, label }) => (
             <button key={id} onClick={() => setCategory(id)}
               className={clsx('flex-1 sm:flex-none px-2.5 sm:px-3 py-1.5 rounded-full text-xs transition-all whitespace-nowrap',
@@ -381,105 +437,65 @@ export default function Inventory() {
               className={clsx('card p-4 transition-colors duration-300',
                 isEditing ? 'border-2 border-botanica-400 dark:border-botanica-600' :
                   saved === product.id ? 'border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/10' : '')}>
-
               {isEditing ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2"><LabeledInput label="Nombre"><EditField field="name" /></LabeledInput></div>
-                    <LabeledInput label="Categoría"><EditField field="category" as="select" opts={CAT_OPTS} /></LabeledInput>
-                    <LabeledInput label="Stock"><EditField field="stock" type="number" /></LabeledInput>
-                    <LabeledInput label="P. Minorista"><EditField field="priceRetail" type="number" /></LabeledInput>
-                    <LabeledInput label="P. Mayorista"><EditField field="priceWholesale" type="number" /></LabeledInput>
-                    <LabeledInput label="Mín. may."><EditField field="minWholesaleQty" type="number" /></LabeledInput>
-                    <div className="col-span-2">
-                      <LabeledInput label="Descripción">
-                        <EditField field="description" />
-                      </LabeledInput>
-                    </div>
-                    <LabeledInput label="💧 Riego"><EditField field="riego" /></LabeledInput>
-                    <LabeledInput label="🪨 Sustrato"><EditField field="sustrato" /></LabeledInput>
-                    <LabeledInput label="🌿 Cuidado"><EditField field="cuidado" /></LabeledInput>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-botanica-400 mb-1">Imágenes</p>
-                    <ImageUploader images={editing.images || []} onChange={imgs => setEditing(v => ({ ...v, images: imgs }))} />
-                  </div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
-                      style={{ background: editing?.featured ? '#386a2b' : '#c2dab8' }}
-                      className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0">
-                      <span
-                        style={{ transform: editing?.featured ? 'translateX(20px)' : 'translateX(0)' }}
-                        className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
-                      />
-                    </button>
-                    <span className="text-[10px] text-botanica-500 dark:text-botanica-400 cursor-pointer"
-                      onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}>
-                      Destacado
-                    </span>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={saveEdit} className="btn-primary text-xs flex-1">Guardar</button>
-                    <button onClick={cancelEdit} className="btn-ghost text-xs">✕</button>
-                  </div>
-                </div>
+                <EditForm
+                  editing={editing}
+                  onChange={onEditChange}
+                  onImages={onEditImages}
+                  onFeatured={onEditFeatured}
+                  onSave={saveEdit}
+                  onCancel={cancelEdit}
+                />
               ) : (
-                <>
-                  <div className="flex items-start gap-3 mb-3">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
                     {product.images?.[0]
-                      ? <img src={product.images[0]} alt={product.name} className="w-14 h-14 rounded-xl object-cover shrink-0 bg-botanica-100 dark:bg-botanica-800" />
-                      : <div className="w-14 h-14 rounded-xl bg-botanica-100 dark:bg-botanica-800 shrink-0 flex items-center justify-center text-2xl opacity-30">🌿</div>
-                    }
+                      ? <img src={product.images[0]} alt={product.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      : <div className="w-12 h-12 rounded-lg bg-botanica-100 dark:bg-botanica-800 shrink-0 flex items-center justify-center text-lg opacity-30">🌿</div>}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-body font-medium text-botanica-900 dark:text-botanica-100 text-sm leading-tight">{product.name}</h3>
-                      <span className="text-[10px] text-botanica-500 dark:text-botanica-400 capitalize">{product.category}</span>
+                      <p className="font-body font-semibold text-botanica-900 dark:text-botanica-100 truncate">{product.name}</p>
+                      <p className="text-[10px] text-botanica-400 dark:text-botanica-500">{CATEGORY_LABELS[product.category] || product.category}</p>
                     </div>
-                    <StockControl productId={product.id} stock={product.stock} />
+                    {product.featured && <span className="text-botanica-400 text-sm">★</span>}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                    <div>
-                      <p className="text-botanica-400 dark:text-botanica-500 mb-0.5">Minorista</p>
-                      <p className="font-mono font-semibold text-botanica-800 dark:text-botanica-200">{formatPrice(product.priceRetail)}</p>
-                    </div>
-                    <div>
-                      <p className="text-botanica-400 dark:text-botanica-500 mb-0.5">Mayorista</p>
-                      <p className="font-mono font-semibold text-soil-600 dark:text-soil-400">{formatPrice(product.priceWholesale)}</p>
-                    </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
+                    <div><span className="text-botanica-400">Mayorista: </span><span className="font-mono text-soil-600 dark:text-soil-400">{formatPrice(product.priceWholesale)}</span></div>
+                    <div><span className="text-botanica-400">Minorista: </span><span className="font-mono">{formatPrice(product.priceRetail)}</span></div>
+                    <div><span className="text-botanica-400">Stock: </span><StockControl productId={product.id} stock={product.stock} /></div>
                   </div>
                   {isAdmin && (
-                    <div className="flex gap-2 border-t border-botanica-100 dark:border-botanica-800 pt-3">
-                      <button onClick={() => startEdit(product)} className="btn-ghost text-xs flex-1">Editar</button>
+                    <div className="flex gap-2 pt-2 border-t border-botanica-100 dark:border-botanica-800">
+                      <button onClick={() => startEdit(product)} className="btn-ghost text-xs py-1 flex-1">Editar</button>
                       <button onClick={() => { if (window.confirm(`¿Eliminar "${product.name}"?`)) deleteProduct(product.id) }}
-                        className="btn-ghost text-xs text-red-400 hover:text-red-600 flex-1">Eliminar</button>
+                        className="btn-ghost text-xs py-1 text-red-400 hover:text-red-600">Eliminar</button>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           )
         })}
       </div>
 
-      <div className="hidden md:block card overflow-hidden min-w-0">
+      {/* Desktop table */}
+      <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-botanica-50 dark:bg-botanica-800 border-b border-botanica-100 dark:border-botanica-700">
-                <th className="text-left px-5 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400 min-w-[180px]">Producto</th>
-                <th className="text-left px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Categoría</th>
-                <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-wholesale">Mayorista</span></th>
-                <th className="text-right px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400"><span className="badge-retail">Minorista</span></th>
-                <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Mín.</th>
-                <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400">Dest.</th>
-                <th className="text-center px-4 py-3 font-body font-medium text-botanica-600 dark:text-botanica-400 min-w-[110px]">Stock</th>
+              <tr className="bg-botanica-50 dark:bg-botanica-800 border-b border-botanica-100 dark:border-botanica-700 text-left">
+                <th className="px-5 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400">Producto</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400">Categoría</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400 text-right">Mayorista</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400 text-right">Minorista</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400 text-center">Mín.</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400 text-center">Destacado</th>
+                <th className="px-4 py-3 font-body font-medium text-botanica-500 dark:text-botanica-400 text-center">Stock</th>
                 {isAdmin && <th className="px-4 py-3 min-w-[130px]" />}
               </tr>
             </thead>
             <tbody>
               {(products || []).length === 0 ? (
-                <tr><td colSpan={isAdmin ? 7 : 6} className="text-center py-12 text-botanica-400 dark:text-botanica-500">Sin productos</td></tr>
+                <tr><td colSpan={isAdmin ? 8 : 7} className="text-center py-12 text-botanica-400 dark:text-botanica-500">Sin productos</td></tr>
               ) : (products || []).map(product => {
                 const isEditing = editing?.id === product.id
                 const wasSaved = saved === product.id
@@ -491,75 +507,65 @@ export default function Inventory() {
 
                     <td className="px-5 py-3">
                       {isEditing ? (
-                        <div className="space-y-2">
-                          <EditField field="name" className="w-full" />
-                          <ImageUploader images={editing.images || []} onChange={imgs => setEditing(v => ({ ...v, images: imgs }))} />
-                        </div>
+                        <TableEditForm
+                          editing={editing}
+                          onChange={onEditChange}
+                          onImages={onEditImages}
+                          onFeatured={onEditFeatured}
+                          onSave={saveEdit}
+                          onCancel={cancelEdit}
+                        />
                       ) : (
                         <div className="flex items-center gap-3">
                           {product.images?.[0]
                             ? <img src={product.images[0]} alt={product.name} className="w-10 h-10 rounded-lg object-cover bg-botanica-100 dark:bg-botanica-800 shrink-0" />
-                            : <div className="w-10 h-10 rounded-lg bg-botanica-100 dark:bg-botanica-800 shrink-0 flex items-center justify-center text-lg opacity-30">🌿</div>
-                          }
+                            : <div className="w-10 h-10 rounded-lg bg-botanica-100 dark:bg-botanica-800 shrink-0 flex items-center justify-center text-lg opacity-30">🌿</div>}
                           <span className="font-body font-medium text-botanica-900 dark:text-botanica-100">{product.name}</span>
                         </div>
                       )}
                     </td>
+
                     <td className="px-4 py-3">
                       {isEditing
-                        ? <EditField field="category" as="select" opts={CAT_OPTS} />
-                        : <span className="text-xs text-botanica-500 dark:text-botanica-400 capitalize">{product.category}</span>}
+                        ? <EditField field="category" value={editing.category ?? ''} as="select" opts={CAT_OPTS} onChange={onEditChange} />
+                        : <span className="text-xs text-botanica-500 dark:text-botanica-400">{CATEGORY_LABELS[product.category] || product.category}</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {isEditing
-                        ? <EditField field="priceWholesale" type="number" className="w-24 ml-auto" />
-                        : (
-                          <div>
-                            <span className="font-mono text-soil-600 dark:text-soil-400 font-semibold">{formatPrice(product.priceWholesale)}</span>
-                            <div className="text-[10px] text-soil-400 dark:text-soil-500">
-                              {product.priceRetail > 0 ? Math.round((1 - product.priceWholesale / product.priceRetail) * 100) : 0}% de ganancia
-                            </div>
-                          </div>
-                        )}
+                        ? <EditField field="priceWholesale" value={editing.priceWholesale ?? ''} type="number" className="w-24 ml-auto" onChange={onEditChange} />
+                        : <span className="font-mono text-soil-600 dark:text-soil-400 font-semibold">{formatPrice(product.priceWholesale)}</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {isEditing
-                        ? <EditField field="priceRetail" type="number" className="w-24 ml-auto" />
+                        ? <EditField field="priceRetail" value={editing.priceRetail ?? ''} type="number" className="w-24 ml-auto" onChange={onEditChange} />
                         : <span className="font-mono text-botanica-800 dark:text-botanica-200">{formatPrice(product.priceRetail)}</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {isEditing
-                        ? <EditField field="minWholesaleQty" type="number" className="w-16 mx-auto" />
+                        ? <EditField field="minWholesaleQty" value={editing.minWholesaleQty ?? ''} type="number" className="w-16 mx-auto" onChange={onEditChange} />
                         : <span className="font-mono text-botanica-500 dark:text-botanica-400">{product.minWholesaleQty}</span>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {isEditing ? (
-                        <button type="button"
-                          onClick={() => setEditing(v => ({ ...v, featured: !v.featured }))}
-                          style={{ background: editing?.featured ? '#386a2b' : '#c2dab8' }}
+                        <button type="button" onClick={onEditFeatured}
+                          style={{ background: editing.featured ? '#386a2b' : '#c2dab8' }}
                           className="relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none mx-auto block">
-                          <span
-                            style={{ transform: editing?.featured ? 'translateX(20px)' : 'translateX(0)' }}
-                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
-                          />
+                          <span style={{ transform: editing.featured ? 'translateX(20px)' : 'translateX(0)' }}
+                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" />
                         </button>
                       ) : (
-                        <span className={clsx('text-sm',
-                          product.featured ? 'text-botanica-500 dark:text-botanica-400' : 'text-botanica-200 dark:text-botanica-700'
-                        )}>★</span>
+                        <span className={clsx('text-sm', product.featured ? 'text-botanica-500 dark:text-botanica-400' : 'text-botanica-200 dark:text-botanica-700')}>★</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {isEditing
-                        ? <EditField field="stock" type="number" className="w-20 mx-auto" />
+                        ? <EditField field="stock" value={editing.stock ?? ''} type="number" className="w-20 mx-auto" onChange={onEditChange} />
                         : isAdmin
                           ? <StockControl productId={product.id} stock={product.stock} />
                           : <span className={clsx('font-mono text-sm font-semibold block text-center',
                             product.stock === 0 ? 'text-red-500 dark:text-red-400' :
                               product.stock <= 5 ? 'text-amber-600 dark:text-amber-400' :
-                                'text-botanica-700 dark:text-botanica-300')}>
-                            {product.stock}
-                          </span>}
+                                'text-botanica-700 dark:text-botanica-300')}>{product.stock}</span>}
                     </td>
                     {isAdmin && (
                       <td className="px-4 py-3 text-right">
@@ -572,7 +578,7 @@ export default function Inventory() {
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => startEdit(product)} className="btn-ghost text-xs py-1">Editar</button>
                             <button onClick={() => { if (window.confirm(`¿Eliminar "${product.name}"?`)) deleteProduct(product.id) }}
-                              className="btn-ghost text-xs py-1 text-red-400 hover:text-red-600 dark:hover:text-red-400">Eliminar</button>
+                              className="btn-ghost text-xs py-1 text-red-400 hover:text-red-600">Eliminar</button>
                           </div>
                         )}
                       </td>
@@ -584,89 +590,6 @@ export default function Inventory() {
           </table>
         </div>
       </div>
-
-      <div className="mt-4 flex flex-wrap gap-3 sm:gap-4 text-xs text-botanica-400 dark:text-botanica-500">
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Stock bajo (≤5)</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" /> Sin stock</span>
-      </div>
-
-      {csvPreview && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white dark:bg-botanica-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col border-t sm:border border-botanica-200 dark:border-botanica-700">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-botanica-100 dark:border-botanica-800">
-              <div>
-                <h2 className="font-display text-lg sm:text-xl text-botanica-900 dark:text-botanica-100">Importar CSV</h2>
-                <p className="text-xs text-botanica-500 dark:text-botanica-400">{csvPreview.rows.length} productos detectados</p>
-              </div>
-              <button onClick={() => setCsvPreview(null)} className="btn-ghost p-2 text-botanica-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="px-4 sm:px-6 py-3 border-b border-botanica-100 dark:border-botanica-800 flex gap-2 sm:gap-3">
-              {[{ id: 'merge', label: 'Combinar', desc: 'Actualiza existentes, agrega nuevos' }, { id: 'replace', label: 'Solo agregar', desc: 'Ignora los existentes' }].map(m => (
-                <button key={m.id} onClick={() => setCsvMode(m.id)}
-                  className={clsx('flex-1 text-left rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 border transition-all text-xs sm:text-sm',
-                    csvMode === m.id ? 'border-botanica-500 bg-botanica-50 dark:bg-botanica-800 text-botanica-800 dark:text-botanica-200' : 'border-botanica-200 dark:border-botanica-700 text-botanica-500 dark:text-botanica-400')}>
-                  <span className="font-medium block">{m.label}</span>
-                  <span className="text-[10px] sm:text-xs opacity-70 hidden sm:block">{m.desc}</span>
-                </button>
-              ))}
-            </div>
-            {csvPreview.errors.length > 0 && (
-              <div className="mx-4 sm:mx-6 mt-3 sm:mt-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 sm:px-4 py-2 sm:py-3">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Advertencias ({csvPreview.errors.length})</p>
-                {csvPreview.errors.map((e, i) => <p key={i} className="text-xs text-amber-600 dark:text-amber-500">{e}</p>)}
-              </div>
-            )}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4">
-              {csvPreview.rows.length === 0 ? (
-                <p className="text-center text-botanica-400 py-8 text-sm">No se encontraron filas válidas.</p>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-botanica-100 dark:border-botanica-800">
-                      <th className="text-left py-2 pr-3 font-medium text-botanica-600 dark:text-botanica-400">Nombre</th>
-                      <th className="text-left py-2 pr-3 font-medium text-botanica-600 dark:text-botanica-400 hidden sm:table-cell">Cat.</th>
-                      <th className="text-right py-2 pr-3 font-medium text-botanica-600 dark:text-botanica-400">Minorista</th>
-                      <th className="text-right py-2 pr-3 font-medium text-botanica-600 dark:text-botanica-400 hidden sm:table-cell">Mayorista</th>
-                      <th className="text-center py-2 font-medium text-botanica-600 dark:text-botanica-400">Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {csvPreview.rows.map((row, i) => {
-                      const isExisting = products.some(p => p.id === row.id || p.name.toLowerCase() === row.name.toLowerCase())
-                      return (
-                        <tr key={i} className="border-b border-botanica-50 dark:border-botanica-800/50">
-                          <td className="py-2 pr-3 text-botanica-900 dark:text-botanica-100 font-medium">
-                            <span className="truncate block max-w-[120px] sm:max-w-none">{row.name}</span>
-                            {isExisting && <span className="text-[9px] bg-botanica-100 dark:bg-botanica-800 text-botanica-500 px-1 py-0.5 rounded-full">existente</span>}
-                          </td>
-                          <td className="py-2 pr-3 text-botanica-500 dark:text-botanica-400 capitalize hidden sm:table-cell">{row.category}</td>
-                          <td className="py-2 pr-3 text-right font-mono text-botanica-700 dark:text-botanica-300">{formatPrice(row.priceRetail)}</td>
-                          <td className="py-2 pr-3 text-right font-mono text-soil-600 dark:text-soil-400 hidden sm:table-cell">{formatPrice(row.priceWholesale)}</td>
-                          <td className="py-2 text-center font-mono text-botanica-700 dark:text-botanica-300">{row.stock}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-t border-botanica-100 dark:border-botanica-800 gap-3">
-              <p className="text-[10px] sm:text-xs text-botanica-400 dark:text-botanica-500 hidden sm:block">Columnas: nombre, categoría, p. minorista, p. mayorista, stock, unidad</p>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <button onClick={() => setCsvPreview(null)} className="btn-ghost text-xs sm:text-sm flex-1 sm:flex-none">Cancelar</button>
-                <button onClick={confirmImport} disabled={csvPreview.rows.length === 0}
-                  className="btn-primary text-xs sm:text-sm flex-1 sm:flex-none disabled:opacity-40">
-                  Importar {csvPreview.rows.length}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

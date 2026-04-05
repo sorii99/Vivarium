@@ -29,20 +29,21 @@ export default function ProductCard({ product, compact = false }) {
             </div>
           )}
 
-          <span className="absolute top-2 left-2 bg-white/80 dark:bg-botanica-900/80 backdrop-blur-sm text-botanica-700 dark:text-botanica-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-            {CATEGORY_ICONS[product.category]} {CATEGORY_LABELS[product.category] || product.category}
-          </span>
-
-          {product.stock > 0 && product.stock <= 5 && (
-            <span className="absolute top-2 right-2 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-              Últimas {product.stock} unidades
+          <div className="absolute top-2 left-2 right-2 flex flex-col sm:flex-row sm:justify-between gap-1 pointer-events-none">
+            <span className="self-start bg-white/80 dark:bg-botanica-900/80 backdrop-blur-sm text-botanica-700 dark:text-botanica-300 text-[10px] px-1.5 py-0.5 rounded-full truncate max-w-full">
+              {CATEGORY_ICONS[product.category]} {CATEGORY_LABELS[product.category] || product.category}
             </span>
-          )}
-          {product.stock === 0 && (
-            <span className="absolute top-2 right-2 bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-              Sin stock
-            </span>
-          )}
+            {product.stock > 0 && product.stock <= 5 && (
+              <span className="self-start sm:self-auto bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 text-[10px] px-1.5 py-0.5 rounded-full">
+                Últimas {product.stock} u.
+              </span>
+            )}
+            {product.stock === 0 && (
+              <span className="self-start sm:self-auto bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300 text-[10px] px-1.5 py-0.5 rounded-full">
+                Sin stock
+              </span>
+            )}
+          </div>
         </div>
       </Link>
 

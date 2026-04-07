@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '5491100000000'
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
 
 export default function ReservaSuccess() {
-  const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=Hola%2C%20me%20interesa%20consultar%20sobre%20sus%20productos.`
+  const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=Realice%20una%20pedido%2C%20hago%20envío%20del%20comprobante%20para%20continuar!`
 
   return (
     <div className="max-w-lg mx-auto px-4 py-16 sm:py-24 text-center">

@@ -311,7 +311,7 @@ export default function Checkout() {
                 </p>
                 <div className="relative flex items-center gap-3">
                   <div className="flex-1 border-t border-botanica-100 dark:border-botanica-800" />
-                  <span className="text-[10px] text-botanica-400 dark:text-botanica-500 whitespace-nowrap">o tambien puedes</span>
+                  <span className="text-[10px] text-botanica-400 dark:text-botanica-500 whitespace-nowrap">tambien podés</span>
                   <div className="flex-1 border-t border-botanica-100 dark:border-botanica-800" />
                 </div>
               </>
@@ -325,9 +325,13 @@ export default function Checkout() {
                 : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>Reservar</>
               }
             </button>
-            <p className="text-center text-[10px] text-botanica-400 dark:text-botanica-500">
-              Coordinaremos el pago y la entrega por Whatsapp.
-            </p>
+
+            <div className="bg-botanica-800/50 border border-botanica-700/50 rounded-xl px-4 py-3">
+              <p className="text-botanica-400 text-xs leading-relaxed">
+                <span className="text-botanica-300 font-medium">ℹ️ Información importante:</span>{' '}
+                <br />Coordinaremos el pago y la entrega por Whatsapp.
+              </p>
+            </div>
           </div>
         </div>
       </form>

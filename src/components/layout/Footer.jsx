@@ -81,15 +81,15 @@ export default function Footer() {
             <ul className="space-y-1.5 text-xs text-botanica-500">
               <li className="flex justify-between gap-4">
                 <span>Lunes a Viernes</span>
-                <span className="text-botanica-400">9:00 – 18:00</span>
+                <span className="text-botanica-400">7:00 – 18:00</span>
               </li>
               <li className="flex justify-between gap-4">
-                <span>Sábados</span>
-                <span className="text-botanica-400">9:00 – 15:00</span>
+                <span>Sábados y Domingos</span>
+                <span className="text-botanica-400">7:00 – 18:00</span>
               </li>
               <li className="flex justify-between gap-4">
-                <span>Domingos</span>
-                <span className="text-botanica-400">9:00 – 15:00</span>
+                <span>Feriados</span>
+                <span className="text-botanica-400">7:00 – 18:00</span>
               </li>
             </ul>
           </div>

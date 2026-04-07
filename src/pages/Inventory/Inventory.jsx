@@ -89,14 +89,18 @@ function ImageUploader({ images, onChange }) {
         <input type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrl())}
           placeholder="https://... (URL de la imagen)" className="input-field py-1.5 text-xs flex-1" />
-        <button type="button" onClick={addUrl} className="btn-outline text-xs px-2 sm:px-3 py-1.5 shrink-0">+ Añadir</button>
+        <button type="button" onClick={addUrl} className="btn-outline text-xs px-2 sm:px-3 py-1.5 shrink-0">+ Añadir imagen</button>
       </div>
       <button type="button" onClick={() => !uploading && fileRef.current.click()} disabled={uploading}
         className="w-full border-2 border-dashed border-botanica-200 dark:border-botanica-700 rounded-xl py-2.5 text-xs text-botanica-500 dark:text-botanica-400 hover:border-botanica-400 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
         {uploading ? (
           <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Subiendo…</>
         ) : (
-          <>{isSupabaseEnabled ? 'Subir a la nube' : 'Subir desde dispositivo'}</>
+          <>
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            {isSupabaseEnabled ? 'Subir imagen' : 'Subir desde el dispositivo'}</>
         )}
       </button>
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addFile} />
@@ -361,7 +365,7 @@ export default function Inventory() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">
             <LabeledInput label="💧 Riego">
-              <input type="text" value={newProd.riego} onChange={e => setNew('riego', e.target.value)} placeholder="Ej: 2 veces/semana" className="input-field py-2 text-sm" />
+              <input type="text" value={newProd.riego} onChange={e => setNew('riego', e.target.value)} placeholder="Ej: 2 veces por semana" className="input-field py-2 text-sm" />
             </LabeledInput>
             <LabeledInput label="🪨 Sustrato">
               <input type="text" value={newProd.sustrato} onChange={e => setNew('sustrato', e.target.value)} placeholder="Ej: Tierra universal" className="input-field py-2 text-sm" />
@@ -381,11 +385,11 @@ export default function Inventory() {
               <span style={{ transform: newProd.featured ? 'translateX(20px)' : 'translateX(0)' }}
                 className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" />
             </button>
-            <span className="text-xs text-botanica-500 dark:text-botanica-400">Destacado en inicio</span>
+            <span className="text-xs text-botanica-500 dark:text-botanica-400">Mostrar como destacado</span>
           </div>
           <div className="flex gap-2">
             <button onClick={handleAdd} disabled={!newProd.name} className="btn-primary text-xs sm:text-sm disabled:opacity-40">
-              Mostrar como destacado
+              Añadir producto
             </button>
             <button onClick={cancelAdd} className="btn-ghost text-xs sm:text-sm">Cancelar</button>
           </div>
@@ -533,7 +537,14 @@ export default function Inventory() {
                     <td className="px-4 py-3 text-right">
                       {isEditing
                         ? <EditField field="priceWholesale" value={editing.priceWholesale ?? ''} type="number" className="w-24 ml-auto" onChange={onEditChange} />
-                        : <span className="font-mono text-soil-600 dark:text-soil-400 font-semibold">{formatPrice(product.priceWholesale)}</span>}
+                        : (
+                          <div>
+                            <span className="font-mono text-soil-600 dark:text-soil-400 font-semibold">{formatPrice(product.priceWholesale)}</span>
+                            <div className="text-[10px] text-soil-400 dark:text-soil-500">
+                              {product.priceRetail > 0 ? Math.round((1 - product.priceWholesale / product.priceRetail) * 100) : 0}% de ganancia
+                            </div>
+                          </div>
+                        )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {isEditing

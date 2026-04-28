@@ -42,10 +42,11 @@ function ImageUploader({ images, onChange }) {
   const fileRef = useRef()
   const [urlInput, setUrlInput] = useState('')
   const [uploading, setUploading] = useState(false)
+  const MAX_IMAGES = 3
 
   const addUrl = () => {
     const url = urlInput.trim()
-    if (!url) return
+    if (!url || images.length >= MAX_IMAGES) return
     onChange([...images, url])
     setUrlInput('')
   }
@@ -64,7 +65,8 @@ function ImageUploader({ images, onChange }) {
         return fileToDataUrl(file)
       }))
       const valid = results.filter(Boolean)
-      if (valid.length) onChange([...images, ...valid])
+      const remaining = MAX_IMAGES - images.length
+      if (valid.length && remaining > 0) onChange([...images, ...valid.slice(0, remaining)])
     } finally {
       setUploading(false)
       e.target.value = ''
@@ -104,6 +106,9 @@ function ImageUploader({ images, onChange }) {
         )}
       </button>
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={addFile} />
+      {images.length >= MAX_IMAGES && (
+        <p className="text-[10px] text-amber-500 text-center">Máximo 3 imágenes por producto</p>
+      )}
     </div>
   )
 }
@@ -360,7 +365,7 @@ export default function Inventory() {
           </div>
           <div className="mb-3 sm:mb-4">
             <LabeledInput label="Descripción">
-              <textarea value={newProd.description} onChange={e => setNew('description', e.target.value)} placeholder="Descripción breve…" rows={2} className="input-field py-2 text-sm resize-none" />
+              <textarea value={newProd.description} onChange={e => setNew('description', e.target.value)} placeholder="Descripción breve del producto" rows={2} className="input-field py-2 text-sm resize-none" />
             </LabeledInput>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">
@@ -481,7 +486,6 @@ export default function Inventory() {
         })}
       </div>
 
-      {/* Desktop table */}
       <div className="hidden md:block card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

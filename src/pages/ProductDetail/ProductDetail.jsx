@@ -49,13 +49,58 @@ export default function ProductDetail() {
 
       <div className="grid sm:grid-cols-2 gap-6 sm:gap-10 items-start">
 
-        <div className="rounded-2xl overflow-hidden aspect-square bg-botanica-100 dark:bg-botanica-800">
-          {product.images?.[0] ? (
-            <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-7xl opacity-20">🌿</div>
-          )}
-        </div>
+        {(() => {
+          const imgs = (product.images || []).slice(0, 3)
+          const [idx, setIdx] = useState(0)
+          const cur = idx < imgs.length ? idx : 0
+          return (
+            <div className="flex flex-col gap-3">
+              <div className="relative rounded-2xl overflow-hidden aspect-square bg-botanica-100 dark:bg-botanica-800 group">
+                {imgs.length > 0 ? (
+                  <img src={imgs[cur]} alt={`${product.name} ${cur + 1}`} className="w-full h-full object-cover transition-opacity duration-300" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-7xl opacity-20">🌿</div>
+                )}
+                {imgs.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setIdx((cur - 1 + imgs.length) % imgs.length)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-botanica-900/60 hover:bg-botanica-900/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setIdx((cur + 1) % imgs.length)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-botanica-900/60 hover:bg-botanica-900/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {imgs.map((_, i) => (
+                        <button key={i} onClick={() => setIdx(i)}
+                          className={`w-1.5 h-1.5 rounded-full transition-all ${i === cur ? 'bg-white w-3' : 'bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              {imgs.length > 1 && (
+                <div className="flex gap-2">
+                  {imgs.map((src, i) => (
+                    <button key={i} onClick={() => setIdx(i)}
+                      className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === cur ? 'border-botanica-500' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         <div>
           <span className="badge-retail mb-2 sm:mb-3 inline-block">{CATEGORY_LABELS[product.category] || product.category}</span>

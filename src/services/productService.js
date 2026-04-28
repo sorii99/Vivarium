@@ -15,7 +15,7 @@ export const CATEGORIES = [
     ]
   },
   { id: 'kits', label: 'Kits' },
-  { id: 'insumos', label: 'Insumos' },
+  { id: 'insumos', label: 'Insumos y Ornamentos' },
   { id: 'quimicos', label: 'Químicos' },
   { id: 'fertilizantes', label: 'Fertilizantes' },
   {

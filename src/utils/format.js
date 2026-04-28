@@ -25,7 +25,7 @@ export const CATEGORY_LABELS = {
   'exterior-frutales': 'Frutales',
   'exterior-aromaticas': 'Aromáticas',
   kits: 'Kits',
-  insumos: 'Insumos',
+  insumos: 'Insumos y Ornamentos',
   quimicos: 'Químicos',
   fertilizantes: 'Fertilizantes',
   macetas: 'Macetas',

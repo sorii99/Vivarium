@@ -148,7 +148,7 @@ export default function Home() {
             {[
               { emoji: '🪴', label: 'Interior', cat: 'interior', count: stats.interior },
               { emoji: '🌳', label: 'Exterior', cat: 'exterior', count: stats.exterior },
-              { emoji: '🌱', label: 'Insumos', cat: 'insumos', count: stats.insumos },
+              { emoji: '🌱', label: 'Insumos y Ornamentos', cat: 'insumos', count: stats.insumos },
               { emoji: '🧪', label: 'Químicos', cat: 'quimicos', count: stats.quimicos },
               { emoji: '🌿', label: 'Fertilizantes', cat: 'fertilizantes', count: stats.fertilizantes },
               { emoji: '🏺', label: 'Macetas', cat: 'macetas', count: stats.macetas },

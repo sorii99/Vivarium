@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
@@ -28,6 +28,38 @@ function saveForm(form) {
   try { sessionStorage.setItem(FORM_KEY, JSON.stringify(form)) } catch { }
 }
 
+function CheckoutWarning({ onClose }) {
+  const overlayRef = React.useRef()
+  React.useEffect(() => {
+    const t = setTimeout(onClose, 40000)
+    return () => clearTimeout(t)
+  }, [onClose])
+  return (
+    <div ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={e => { if (e.target === overlayRef.current) onClose() }}>
+      <div className="w-full max-w-sm bg-white dark:bg-botanica-900 rounded-2xl shadow-2xl p-5 border border-botanica-100 dark:border-botanica-800">
+        <div className="flex items-start gap-3 mb-4">
+          <span className="text-2xl shrink-0">⚠️</span>
+          <div>
+            <p className="text-sm font-semibold text-botanica-800 dark:text-botanica-200 mb-1">
+              Antes de continuar
+            </p>
+            <ol className="text-xs text-botanica-500 dark:text-botanica-400 leading-relaxed">
+              <ul>* Los precios y disponibilidad de stock son orientativos y pueden variar.</ul>
+              <ul>* El costo de envío es un estimado sujeto a confirmación según la dirección de entrega.</ul>
+              <ul>* Una vez realizada la reserva, nos contactaremos para coordinar los detalles del pedido.</ul>
+            </ol>
+          </div>
+        </div>
+        <button onClick={onClose} className="w-full btn-primary text-sm py-2.5">
+          Entendido
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Checkout() {
   const { items, subtotal, clearCart } = useCart()
   const { user } = useAuth()
@@ -41,6 +73,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false)
   const [reservaLoading, setReservaLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showWarning, setShowWarning] = useState(true)
   const [mpEnabled, setMpEnabled] = useState(() => getSetting('mpEnabled') !== false)
 
   useEffect(() => {
@@ -149,7 +182,7 @@ export default function Checkout() {
 
       window.location.href = data.init_point
     } catch {
-      setError('No se pudo iniciar el pago. Verificá tu conexión o las credenciales de Mercado Pago.')
+      setError('No se pudo iniciar el pago.')
       setLoading(false)
     }
   }
@@ -166,7 +199,12 @@ export default function Checkout() {
   const labelCls = 'block text-xs text-botanica-500 dark:text-botanica-400 font-medium mb-1.5 uppercase tracking-wider'
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12 relative">
+
+      {showWarning && (
+        <CheckoutWarning onClose={() => setShowWarning(false)} />
+      )}
+
       <Link to="/productos" className="btn-ghost text-sm mb-6 inline-flex items-center gap-1">← Seguir comprando</Link>
       <h1 className="font-display text-2xl sm:text-3xl text-botanica-900 dark:text-botanica-100 mb-6 sm:mb-8">Resumen</h1>
 
@@ -201,7 +239,7 @@ export default function Checkout() {
                   <div className="flex items-start gap-3 bg-green-50 dark:bg-green-900/20 rounded-xl p-3 mb-3">
                     <span className="text-2xl shrink-0">📍</span>
                     <div>
-                      <p className="text-sm font-medium text-botanica-800 dark:text-botanica-200">Punto de entrega — Gratis</p>
+                      <p className="text-sm font-medium text-botanica-800 dark:text-botanica-200">Punto de entrega</p>
                       <p className="text-xs text-botanica-500 dark:text-botanica-400 mt-0.5">
                         Seleccioná el punto de retiro más cercano.
                       </p>
@@ -325,13 +363,9 @@ export default function Checkout() {
                 : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>Reservar</>
               }
             </button>
-
-            <div className="bg-botanica-800/50 border border-botanica-700/50 rounded-xl px-4 py-3">
-              <p className="text-botanica-400 text-xs leading-relaxed">
-                <span className="text-botanica-300 font-medium">ℹ️ Información importante:</span>{' '}
-                <br />Coordinaremos el pago y la entrega por Whatsapp.
-              </p>
-            </div>
+            <p className="text-center text-[10px] text-botanica-400 dark:text-botanica-500">
+              Coordinaremos el pago y la entrega por Whatsapp.
+            </p>
           </div>
         </div>
       </form>

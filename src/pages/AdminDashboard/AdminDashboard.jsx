@@ -487,7 +487,7 @@ export default function AdminDashboard() {
             <div className="space-y-3 sm:space-y-4">
               <CategoryBar label="Interior" icon="🪴" count={stats.interior} total={stats.total} color="bg-botanica-500" />
               <CategoryBar label="Exterior" icon="🌳" count={stats.exterior} total={stats.total} color="bg-botanica-400" />
-              <CategoryBar label="Insumos" icon="🌱" count={stats.insumos} total={stats.total} color="bg-soil-400" />
+              <CategoryBar label="Insumos y Ornamentos" icon="🌱" count={stats.insumos} total={stats.total} color="bg-soil-400" />
               <CategoryBar label="Químicos" icon="🧪" count={stats.quimicos} total={stats.total} color="bg-purple-400" />
               <CategoryBar label="Fertilizantes" icon="🌿" count={stats.fertilizantes} total={stats.total} color="bg-emerald-400" />
               <CategoryBar label="Macetas" icon="🏺" count={stats.macetas} total={stats.total} color="bg-amber-400" />
@@ -502,7 +502,7 @@ export default function AdminDashboard() {
               {[
                 { label: 'Interior', icon: '🪴', cat: 'interior' },
                 { label: 'Exterior', icon: '🌳', cat: 'exterior' },
-                { label: 'Insumos', icon: '🌱', cat: 'insumos' },
+                { label: 'Insumos y Ornamentos', icon: '🌱', cat: 'insumos' },
                 { label: 'Químicos', icon: '🧪', cat: 'quimicos' },
                 { label: 'Fertilizantes', icon: '🌿', cat: 'fertilizantes' },
                 { label: 'Macetas', icon: '🏺', cat: 'macetas' },

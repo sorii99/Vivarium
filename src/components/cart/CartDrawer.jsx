@@ -117,7 +117,7 @@ export default function CartDrawer() {
   useEffect(() => {
     if (deliveryType === 'pickup') { setShippingCost(0); return }
     const fuel = parseFloat(fuelPrice) || 0
-    setShippingCost(fuel > 0 ? (fuel * FIXED_KM) / 100 : 0)
+    setShippingCost((fuel > 0 ? (fuel * FIXED_KM) / 100 : 0) * 2)
   }, [fuelPrice, deliveryType])
 
   const total = subtotal + shippingCost
@@ -137,12 +137,13 @@ export default function CartDrawer() {
               <span className="text-2xl shrink-0">📍</span>
               <div>
                 <p className="text-sm font-semibold text-botanica-800 dark:text-botanica-200 mb-1">
-                  Entrega gratuita en punto de entrega
+                  Entrega gratuita en punto de encuentro
                 </p>
                 <p className="text-xs text-botanica-500 dark:text-botanica-400 leading-relaxed">
-                  El retiro es <strong>gratis</strong> cuando tu pedido incluya
+                  <span>*</span> El retiro es <strong>gratis</strong> cuando tu pedido incluya
                   <strong> {FREE_PICKUP_MIN_ITEMS} productos o más</strong>, y supere los{' '}
                   <strong>{formatPrice(FREE_PICKUP_MIN_AMOUNT)}</strong>. De lo contrario, se aplicara tarifa de envío.
+                  <br /><span>*</span> Aplica para productos de un <strong>tamaño no superior a 30 cm., salvo que sea flexible, y de un peso no superior a los 3kg</strong>.
                 </p>
               </div>
             </div>
@@ -203,7 +204,7 @@ export default function CartDrawer() {
                 <span>
                   {totalItems < FREE_PICKUP_MIN_ITEMS
                     ? <>Agregá <strong>{FREE_PICKUP_MIN_ITEMS - totalItems}</strong> producto{FREE_PICKUP_MIN_ITEMS - totalItems !== 1 ? 's' : ''} más para llegar al retiro gratis.</>
-                    : <>Alcanzá <strong>{formatPrice(FREE_PICKUP_MIN_AMOUNT)}</strong> en tu pedido para llegar al retiro gratis.</>
+                    : <>Alcanzá los <strong>{formatPrice(FREE_PICKUP_MIN_AMOUNT)}</strong> en tu pedido para llegar al retiro gratis.</>
                   }
                 </span>
               </div>
